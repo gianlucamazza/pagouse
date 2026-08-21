@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "pagouse",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Page agent for coding agents.",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxmuVwk5Kzrl4iqXBPfM3urekmbsczNnrwI+RlxEyxZABny3rmV4UaTN2GjuhoNBJKbXUE0Wjj6dwfJTYXyus3C6AXDHuAKoPH2NYzwgMEKHP+guHQg0xbUiS7eSP1wpRvOmtk9YwC9qkLAVwe8bMNLH0j9Ox7FvbpCU8qwov/wOW1fN1BwK3hSvdGBvNMmbWUsT4kmz5or1tRU2Dv92UYoanaoUpfAG1CYVQnzQPKxg4DrK1jbHL3yJ8ASl5q3rkOr2gobuKG6pNPSbcFcjMVm47arHtUVuaO9v/WCgwNND5gEQelMWAqX/1LtHFoPbvKOSnXOduq7Ce3br5T1s2jQIDAQAB",
   "permissions": ["nativeMessaging", "tabs", "tabGroups", "scripting", "storage"],

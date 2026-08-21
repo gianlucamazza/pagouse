@@ -22,6 +22,7 @@
 |------|-----|
 | [architecture.md](architecture.md) | What problem this solves, the layers, the non-goals |
 | [security-model.md](security-model.md) | The page grant, scheme deny, untrusted data |
+| [release.md](release.md) | Cut a release and ship it to the Chrome Web Store |
 | [../CONTRIBUTING.md](../CONTRIBUTING.md) | Dev loop, test suite, layout rules |
 
 ## Conventions

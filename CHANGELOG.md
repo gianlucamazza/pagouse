@@ -2,8 +2,16 @@
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-08-22
+
 ### Added
 
+- Brand icon set rendered from one SVG source in `extension/icons/src/`.
+- Store packaging: `install/package-store.sh` builds a reproducible store
+  zip from committed sources only.
+- Publishing: `install/webstore-publish.py`, a stdlib-only Chrome Web Store
+  uploader (upload, publish, status) driven by environment variables.
+- Store listing copy, a typeset terminal screenshot, and a privacy policy.
 - `install.sh` links the skill into `~/.config/opencode/skills` when that
   root already exists.
 
