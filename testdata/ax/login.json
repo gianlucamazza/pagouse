@@ -1,0 +1,32 @@
+{
+  "role": "RootWebArea",
+  "name": "Sign in",
+  "ref": "ref_1",
+  "children": [
+    {
+      "role": "textbox",
+      "name": "Email",
+      "ref": "ref_2",
+      "type": "email",
+      "placeholder": "you@example.com"
+    },
+    {
+      "role": "textbox",
+      "name": "Password",
+      "ref": "ref_3",
+      "type": "password",
+      "redacted": true
+    },
+    {
+      "role": "button",
+      "name": "Sign in",
+      "ref": "ref_4"
+    },
+    {
+      "role": "link",
+      "name": "Forgot password?",
+      "ref": "ref_5",
+      "href": "/reset"
+    }
+  ]
+}

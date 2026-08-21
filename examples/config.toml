@@ -1,0 +1,8 @@
+# Copy to ~/.config/pagouse/config.toml if you want to override defaults.
+# Page grant: click/fill/type/key/navigate/tab_*. Default false.
+allow_input = false
+
+[policy]
+# Empty allow_origins = all http(s) once granted. Non-http(s) is always denied.
+allow_origins = []
+deny_origins = []

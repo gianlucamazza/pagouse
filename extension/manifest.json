@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "pagouse",
+  "version": "0.1.0",
+  "description": "Page agent for coding agents.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxmuVwk5Kzrl4iqXBPfM3urekmbsczNnrwI+RlxEyxZABny3rmV4UaTN2GjuhoNBJKbXUE0Wjj6dwfJTYXyus3C6AXDHuAKoPH2NYzwgMEKHP+guHQg0xbUiS7eSP1wpRvOmtk9YwC9qkLAVwe8bMNLH0j9Ox7FvbpCU8qwov/wOW1fN1BwK3hSvdGBvNMmbWUsT4kmz5or1tRU2Dv92UYoanaoUpfAG1CYVQnzQPKxg4DrK1jbHL3yJ8ASl5q3rkOr2gobuKG6pNPSbcFcjMVm47arHtUVuaO9v/WCgwNND5gEQelMWAqX/1LtHFoPbvKOSnXOduq7Ce3br5T1s2jQIDAQAB",
+  "permissions": ["nativeMessaging", "tabs", "tabGroups", "scripting", "storage"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background/background.js"
+  },
+  "action": {
+    "default_title": "pagouse",
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/pagouse-16.png",
+      "32": "icons/pagouse-32.png"
+    }
+  },
+  "icons": {
+    "16": "icons/pagouse-16.png",
+    "32": "icons/pagouse-32.png",
+    "48": "icons/pagouse-48.png",
+    "128": "icons/pagouse-128.png"
+  }
+}
