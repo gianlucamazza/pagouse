@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- pagouse brand mark: a goose on the daily-profile green -->
+  <rect width="1024" height="1024" rx="230" fill="#1A6B4A"/>
+  <g>
+    <!-- body with raised tail point -->
+    <path d="M 368 716
+             C 336 606 428 530 570 532
+             C 692 534 782 556 846 540
+             L 922 476
+             C 918 580 858 668 762 708
+             C 650 756 452 760 368 716 Z"
+          fill="#FFFFFF"/>
+    <!-- neck: thick round-capped S-curve from head into the chest -->
+    <path d="M 402 292 C 470 410 372 516 452 626"
+          fill="none" stroke="#FFFFFF" stroke-width="132" stroke-linecap="round"/>
+    <!-- head -->
+    <circle cx="392" cy="286" r="116" fill="#FFFFFF"/>
+    <!-- beak -->
+    <path d="M 306 240 Q 200 268 152 314 Q 208 356 312 358 Z" fill="#FFFFFF"/>
+    <!-- eye -->
+    <circle cx="424" cy="264" r="22" fill="#1A6B4A"/>
+  </g>
+</svg>
