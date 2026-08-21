@@ -33,7 +33,11 @@ link_skill() {
 	echo "Linked skill → $dest/SKILL.md"
 }
 
-for root in "${HOME}/.claude/skills" "${HOME}/.grok/skills" "${HOME}/.agents/skills"; do
+for root in \
+	"${HOME}/.claude/skills" \
+	"${HOME}/.grok/skills" \
+	"${HOME}/.agents/skills" \
+	"${HOME}/.config/opencode/skills"; do
 	[[ -d "$root" ]] || continue
 	link_skill "$root/pagouse"
 done

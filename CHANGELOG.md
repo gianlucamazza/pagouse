@@ -1,5 +1,12 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- `install.sh` links the skill into `~/.config/opencode/skills` when that
+  root already exists.
+
 ## [0.1.0] — 2026-08-22
 
 ### Added
