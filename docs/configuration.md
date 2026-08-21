@@ -29,6 +29,6 @@ A bare string in a list key is one token, not a sequence of characters.
 | `XDG_CONFIG_HOME` | Config root; also searched for Chromium NativeMessagingHosts |
 | `XDG_RUNTIME_DIR` | Daemon socket and shot files (`$XDG_RUNTIME_DIR/pagouse/`) |
 
-`chrome://`, `chrome-extension://`, `about:`, `file:`, `devtools:`, `data:`,
-and `javascript:` are always denied. That list is shipped; origin tokens are
-not.
+Non-http(s) schemes (`chrome:`, `file:`, …) are always denied by the shipped
+list in [security-model.md](security-model.md). Origin tokens are yours to
+name; pagouse ships no denylist of sites.

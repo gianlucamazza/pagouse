@@ -1,5 +1,9 @@
 # Quickstart
 
+Prerequisites: **Linux**, Python 3.13+, [`uv`](https://docs.astral.sh/uv/),
+and a Chromium-family browser (Chrome, Chromium, Brave, Edge) on your daily
+profile.
+
 ```bash
 git clone https://github.com/gianlucamazza/pagouse
 cd pagouse

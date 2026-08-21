@@ -24,8 +24,9 @@ Global flags: `--json`, `--allow-input`, `--version`.
 | `tab_focus` | `--tab ID` |
 | `daemon` | Foreground router. `--stop` tears it down |
 
-Mutate commands refuse with `readonly` (exit 2) unless `--allow-input`,
-`PAGOUSE_ALLOW_INPUT=1`, or `allow_input = true` in config.
+Mutate commands refuse with `readonly` (exit 2) without a grant — the flag,
+an environment variable, or a config key. How the grant works:
+[security-model.md](security-model.md).
 
 ## The MCP extra
 

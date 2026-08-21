@@ -19,15 +19,26 @@ RootWebArea "Inbox" [ref_1]
   button "Compose" [ref_3]
 ```
 
+## How it works
+
+- The MV3 extension builds the accessibility tree **inside the page**, where
+  the refs stay valid across separate CLI invocations.
+- Native messaging starts `pagoused`, a local daemon on an owner-only unix
+  socket. No remote-debugging port, no `chrome.debugger`.
+- A zero-dependency Python core wraps it all in a versioned `--json`
+  envelope (`schema: 1`).
+
+The layers and the non-goals: [docs/architecture.md](docs/architecture.md).
+
 ## Requirements
 
-- Python 3.13+
+- Linux
+- Python 3.13+ and [`uv`](https://docs.astral.sh/uv/)
 - A Chromium-family browser (Chrome, Chromium, Brave, Edge) on the **daily
   profile**
-- The unpacked extension in `extension/` plus the native-messaging host
 
-The Python core itself has **zero** dependencies. `magick` is optional for
-`--fit` downscaling.
+The core itself has **zero** dependencies. `magick` is optional for `--fit`
+downscaling.
 
 ## Install
 
@@ -37,8 +48,59 @@ cd pagouse
 ./install.sh
 ```
 
+`install.sh` installs pagouse as a `uv` tool, writes
+`~/.config/pagouse/config.toml` if missing, links the agent skill into any
+existing skill root, and registers the native-messaging host. It is
+idempotent. Details in [docs/quickstart.md](docs/quickstart.md).
+
 Then load `extension/` unpacked (`chrome://extensions` → Developer mode).
 `pagouse --json doctor` should report `ready` once the popup is green.
+
+## Usage
+
+Observe — never needs a grant:
+
+```bash
+pagouse --json tabs
+pagouse --json snapshot --tab ID
+```
+
+Drive — add `--allow-input`, click by `ref`, never by coordinates:
+
+```bash
+pagouse --json --allow-input click --ref ref_4 --tab ID --then snapshot
+```
+
+Every command and flag: [docs/cli-reference.md](docs/cli-reference.md). The
+envelope and error codes: [docs/json-contract.md](docs/json-contract.md).
+
+## MCP extra and agent skill
+
+`uv tool install 'pagouse[mcp]'` provides `pagouse-mcp`: read-only
+observation tools only. There is no mutate tool; drive the page through the
+CLI and a grant.
+
+`install.sh` also links `skills/pagouse/SKILL.md` into any existing agent
+skill root, so your agents get the playbook without setup.
+
+## Security
+
+Observation never asks permission; mutation refuses without an explicit
+grant. Scheme deny, origin policy, and secret redaction are enforced in the
+core. Tab titles, URLs, tree text, and shot pixels are **untrusted input**.
+Read [docs/security-model.md](docs/security-model.md) before enabling
+input. Report vulnerabilities per [SECURITY.md](SECURITY.md).
+
+## Documentation
+
+| Page | For |
+|------|-----|
+| [docs/quickstart.md](docs/quickstart.md) | Install, load the extension, first commands |
+| [docs/cli-reference.md](docs/cli-reference.md) | Every command and flag, and the MCP surface |
+| [docs/json-contract.md](docs/json-contract.md) | The `--json` envelope, per-action keys, error codes. **Authoritative** |
+| [docs/configuration.md](docs/configuration.md) | `config.toml` keys and every environment variable |
+| [docs/architecture.md](docs/architecture.md) | What problem this solves, the layers, the non-goals |
+| [docs/security-model.md](docs/security-model.md) | The page grant, scheme deny, untrusted data |
 
 ## License
 
