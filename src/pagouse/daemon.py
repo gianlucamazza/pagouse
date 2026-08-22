@@ -136,6 +136,8 @@ class Hub:
             reply.update(self.capabilities())
             send_line(conn, reply)
             return
+        if op in {"wait_ref"}:
+            logger.debug("observe op=%s", op)
         if op in MUTATE_OPS:
             logger.debug("mutate op=%s", op)
             try:
@@ -271,10 +273,14 @@ def stop() -> bool:
 
 
 def main() -> int:
+    from pagouse.log import setup
+
+    setup()
     if "--stop" in sys.argv:
         stopped = stop()
         sys.stdout.write(json.dumps({"ok": True, "stopped": stopped}) + "\n")
         return 0
+    logger.info("pagoused listening on %s", socket_path())
     return listen()
 
 

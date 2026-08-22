@@ -434,6 +434,25 @@ async function handle(msg) {
     return { ok: true, op: "tab_focus", tab_id: tab.id };
   }
 
+  if (op === "wait_ref") {
+    const ref = msg.ref || "";
+    const timeoutMs = msg.timeout_ms || 5000;
+    const pollInterval = 150;
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      try {
+        const result = await runByRef(tab, ref, (r) => globalThis.__pagouse.lookup(r) ? { ok: true } : { ok: false });
+        if (result && result.ok) {
+          return { ok: true, op: "wait_ref", tab_id: tab.id, ref, matched: true };
+        }
+      } catch {
+        /* ref not found yet, keep polling */
+      }
+      await new Promise((r) => setTimeout(r, pollInterval));
+    }
+    return { ok: false, error: "wait_timeout", message: `ref ${ref} not found after ${timeoutMs}ms` };
+  }
+
   return { ok: false, error: "bad_arg", message: `unknown op ${op}` };
 }
 

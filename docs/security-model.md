@@ -33,7 +33,7 @@ command it ran.
 - **User origin policy.** `allow_origins` / `deny_origins` from config.
 - **Origin check mid-action.** If the tab navigated, `origin_changed`.
 - **MCP is observe-only.** The extra exposes `doctor`, `tabs`, `snapshot`,
-  `shot`, and `wait`. All are annotated read-only; no mutate tool exists there.
+  `shot`, `wait`, and `wait_ref`. All are annotated read-only; no mutate tool exists there.
 - **No network surface.** The CLI is stdio. The daemon binds
   `$XDG_RUNTIME_DIR/pagouse/pagoused.sock`, mode `0600`.
 - **Secret fields.** Password and typical autocomplete secrets serialize as

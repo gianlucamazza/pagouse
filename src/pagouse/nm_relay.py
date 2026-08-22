@@ -13,6 +13,7 @@ import time
 from typing import Any
 
 from pagouse.ipc import nm_pack, nm_read, recv_line, send_line
+from pagouse.log import logger, setup
 from pagouse.paths import socket_path
 
 _ENSURE_TRIES = 50
@@ -62,11 +63,12 @@ def _connect() -> socket.socket:
 
 
 def main() -> int:
+    setup()
     ensure_daemon()
     try:
         daemon = _connect()
     except OSError as exc:
-        sys.stderr.write(f"pagouse-nm: {exc}\n")
+        logger.error("nm_relay: %s", exc)
         return 1
     stdin = sys.stdin.buffer
     stdout = sys.stdout.buffer

@@ -111,3 +111,26 @@ def wait(
     raise WaitTimeout(
         f"wait timed out after {timeout_ms}ms" + (f" (url={last_url})" if last_url else "")
     )
+
+
+def wait_ref(
+    tab_id: int | None = None,
+    *,
+    ref: str,
+    timeout_ms: int = 5000,
+) -> dict[str, Any]:
+    """Poll the extension for a ref using lightweight lookup (no full AX walk)."""
+    if timeout_ms <= 0:
+        raise BadArg("timeout_ms must be positive")
+    reply = call(
+        "wait_ref",
+        tab_id=tab_id,
+        ref=ref,
+        timeout_ms=timeout_ms,
+    )
+    return {
+        "tab_id": reply.get("tab_id"),
+        "ref": ref,
+        "matched": reply.get("matched", False),
+        "timeout_ms": timeout_ms,
+    }

@@ -92,11 +92,32 @@ def cmd_wait(args: argparse.Namespace) -> int:
     )
 
 
+def cmd_wait_ref(args: argparse.Namespace) -> int:
+    from pagouse.observe import wait_ref
+
+    data = wait_ref(
+        args.tab,
+        ref=args.ref,
+        timeout_ms=args.timeout,
+    )
+    payload = _envelope(ok=True, action="wait_ref", data=data)
+    return _print(
+        payload,
+        as_json=args.json,
+        human=f"matched={data.get('matched')} tab={data.get('tab_id')} ref={args.ref}\n",
+    )
+
+
 def cmd_shot(args: argparse.Namespace) -> int:
     from pagouse.observe import shot
 
     data = shot(args.tab, fit=args.fit)
     payload = _envelope(ok=True, action="shot", data={"shot": data})
+    if not args.json and data.get("fit_skipped"):
+        sys.stderr.write(
+            "pagouse: ImageMagick not found — shot saved without resizing. "
+            "Install `magick` or use --fit 0.\n"
+        )
     return _print(payload, as_json=args.json, human=str(data.get("path") or "") + "\n")
 
 
@@ -278,6 +299,21 @@ def build_parser() -> argparse.ArgumentParser:
         help="milliseconds (default 5000)",
     )
     waiting.set_defaults(func=cmd_wait)
+
+    waiting_ref = sub.add_parser(
+        "wait_ref",
+        help="poll extension for a ref (lightweight, no AX walk)",
+    )
+    waiting_ref.add_argument("--tab", type=int, metavar="ID")
+    waiting_ref.add_argument("--ref", required=True, help="ref_N from snapshot")
+    waiting_ref.add_argument(
+        "--timeout",
+        type=int,
+        default=5000,
+        metavar="MS",
+        help="milliseconds (default 5000)",
+    )
+    waiting_ref.set_defaults(func=cmd_wait_ref)
 
     then: dict[str, Any] = {
         "default": "none",

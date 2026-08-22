@@ -1,19 +1,24 @@
 # Changelog
 
-## [0.3.0] — 2026-08-22
+## [0.4.0] — 2026-08-22
 
 ### Added
 
+- `wait_ref` command: lightweight extension-side polling for a ref (no
+  full AX walk). Available on CLI (`--json wait_ref`), MCP extra, and in
+  the agent skill.
 - `--verbose` flag and `PAGOUSE_LOG` environment variable for structured
   stdlib logging (levels: `debug`, `info`, `warning`, `error`).
 - `--delay MS` on mutate commands (`click`, `fill`, `type`, `key`,
   `navigate`, `tab_open`, `scroll`) to configure the wait before
   `--then snapshot` (default 450 ms).
 - `fit_skipped: true` in the `shot` envelope when ImageMagick is not
-  installed, so the resize cap is no longer silently skipped.
+  installed, plus a stderr warning in non-JSON mode.
 - `__all__` on core modules (`contract`, `errors`, `models`) to declare
   the public API.
 - Explicit Content Security Policy in the extension manifest.
+- Error code table in the agent skill (all 11 codes documented).
+- Logging in `nm_relay.py`, `hosts/mcp.py`, and `daemon.py`.
 
 ### Changed
 

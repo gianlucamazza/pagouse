@@ -41,6 +41,7 @@ report `blockers` and stop — do not invent a compositor or pixel fallback.
 | Accessibility tree | `pagouse --json snapshot --tab ID` |
 | Look at pixels | `pagouse --json shot --tab ID` |
 | Wait for URL or ref | `pagouse --json wait --tab ID --url-contains "/done" --timeout 8000` |
+| Wait for ref (fast) | `pagouse --json wait_ref --tab ID --ref ref_N --timeout 8000` |
 
 Find tabs in `tabs` (ids, urls, `active`) and refs in `snapshot.tree`
 (`[ref_N]`). Do not invent ids or refs.
@@ -68,13 +69,37 @@ Add `--allow-input` when the user asked to click, fill, type, or navigate
 | New tab | `pagouse --json --allow-input tab_open URL` |
 | Focus tab | `pagouse --json --allow-input tab_focus --tab ID` |
 
+All mutate commands accept `--delay MS` (default 450) to control the wait
+before `--then snapshot`. Use a smaller value if the page is fast, or omit
+`--then snapshot` when you do not need a post-action tree.
+
+Debugging: `--verbose` enables debug logging; set `PAGOUSE_LOG=debug` for
+the same effect on every invocation.
+
 Click is by **ref**, never by coordinates.
 `stale_ref` means the document changed — take a new `snapshot`. Do not retry
 the same ref.
 On `readonly`, `denied`, or `origin_changed`, stop and report — do not retry
 around the gate.
 
-The MCP extra is observe-only (`doctor`, `tabs`, `snapshot`, `shot`, `wait`).
+## Error codes
+
+| Code | Exit | Meaning |
+|------|------|---------|
+| `no_session` | 1 | Extension or daemon not connected |
+| `no_tab` | 1 | Tab ID not found or no usable tab |
+| `stale_ref` | 1 | Ref no longer in the document |
+| `ipc_failed` | 1 | Native-messaging or socket error |
+| `restricted_page` | 1 | Chromium refuses scripting this page |
+| `readonly` | 2 | Mutate without grant |
+| `denied` | 2 | Origin/scheme refused by policy |
+| `origin_changed` | 2 | Tab navigated to another origin |
+| `wait_timeout` | 1 | Wait condition never appeared |
+| `bad_arg` | 2 | Invalid argument |
+| `bad_config` | 2 | Config file unreadable |
+| `usage` | 2 | CLI argument error |
+
+The MCP extra is observe-only (`doctor`, `tabs`, `snapshot`, `shot`, `wait`, `wait_ref`).
 Mutate only through the CLI. `wait_timeout` means the condition never
 appeared — do not retry the same wait without a new snapshot. Iframe nodes
 use refs like `ref_f123_4`.

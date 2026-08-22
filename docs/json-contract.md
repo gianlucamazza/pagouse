@@ -28,6 +28,7 @@ Failure:
 | `snapshot` | `snapshot` (`tab_id`, `url`, `title`, `tree`, `refs`, `filter`); optional `frame_errors` |
 | `shot` | `shot` (`tab_id`, `path`, `width`, `height`, `scale`); optional `fit_skipped` when ImageMagick is missing |
 | `wait` | `tab_id`, `url`, `matched` (`url` or `ref`), `timeout_ms` |
+| `wait_ref` | `tab_id`, `ref`, `matched` (bool), `timeout_ms` |
 | `scroll` | `tab_id`, `ref`; optional `snapshot` if `--then snapshot` |
 | `click` | `tab_id`, `ref`; optional `snapshot` if `--then snapshot` |
 | `fill` | `tab_id`, `ref`, `filled`; optional `snapshot` if `--then snapshot` |

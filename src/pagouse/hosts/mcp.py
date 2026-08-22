@@ -8,6 +8,7 @@ from typing import Any
 
 from pagouse.contract import envelope
 from pagouse.errors import PagouseError
+from pagouse.log import setup
 
 
 def observe_call(action: str, fn: Callable[[], dict[str, Any]]) -> dict[str, Any]:
@@ -18,6 +19,7 @@ def observe_call(action: str, fn: Callable[[], dict[str, Any]]) -> dict[str, Any
 
 
 def main() -> int:
+    setup()
     try:
         from mcp.server.mcpserver import MCPServer
         from mcp.types import ToolAnnotations
@@ -30,6 +32,7 @@ def main() -> int:
     from pagouse.observe import snapshot as take_snapshot
     from pagouse.observe import tabs as list_tabs
     from pagouse.observe import wait as wait_for
+    from pagouse.observe import wait_ref as wait_ref_for
 
     server = MCPServer("pagouse")
     readonly = ToolAnnotations(read_only_hint=True)
@@ -88,6 +91,26 @@ def main() -> int:
                     tab_id,
                     url_contains=url_contains,
                     ref=ref,
+                    timeout_ms=timeout_ms,
+                ),
+            ),
+        )
+
+    @server.tool(annotations=readonly)
+    def wait_ref(
+        tab_id: int | None = None,
+        ref: str | None = None,
+        timeout_ms: int = 5000,
+    ) -> dict:
+        """Poll extension for a ref (lightweight, no AX walk). Read-only."""
+        return observe_call(
+            "wait_ref",
+            lambda: envelope(
+                ok=True,
+                action="wait_ref",
+                data=wait_ref_for(
+                    tab_id,
+                    ref=ref or "",
                     timeout_ms=timeout_ms,
                 ),
             ),

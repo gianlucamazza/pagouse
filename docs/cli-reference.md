@@ -14,6 +14,7 @@ Global flags: `--json`, `--verbose`, `--allow-input`, `--version`.
 | `snapshot` | Accessibility tree with `ref_N`. `--tab ID`, `--filter interactive\|all`, `--depth`, `--max-chars` |
 | `shot` | Viewport PNG. `--tab ID`, `--fit PX` (default 1568; `0` disables) |
 | `wait` | Poll until `--url-contains` or `--ref`. `--tab ID`, `--timeout MS` (default 5000) |
+| `wait_ref` | Poll extension for a ref (lightweight, no AX walk). `--tab ID`, `--ref ref_N`, `--timeout MS` (default 5000) |
 | `scroll` | `--ref ref_N` into view. Optional `--tab ID`, `--then snapshot`, `--delay MS` (default 450) |
 | `click` | `--ref ref_N`. Optional `--tab ID`, `--then snapshot`, `--delay MS` (default 450) |
 | `fill` | `--ref ref_N --value TEXT`. Optional `--tab ID`, `--then snapshot`, `--delay MS` (default 450) |
@@ -30,7 +31,7 @@ an environment variable, or a config key. How the grant works:
 
 ## The MCP extra
 
-The MCP extra exposes `doctor`, `tabs`, `snapshot`, `shot`, and `wait`. All are
+The MCP extra exposes `doctor`, `tabs`, `snapshot`, `shot`, `wait`, and `wait_ref`. All are
 read-only. There is no mutate tool. Drive the page with the CLI and a grant.
 
 Install: `uv tool install 'pagouse[mcp]'` then register `pagouse-mcp` with the
