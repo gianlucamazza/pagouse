@@ -7,8 +7,8 @@ with docs/json-contract.md and docs/security-model.md.
 
 - **Name:** pagouse
 - **Short description** (≤132 chars):
-  Page agent for coding agents. Accessibility tree with ref labels; click,
-  fill, and navigate by ref on your daily Chromium profile.
+  Page agent for coding agents: read pages by accessibility, act by ref —
+  never by pixel. Local daemon, observe by default.
 - **Category:** Developer Tools
 - **Language:** English
 - **Single purpose:** A page agent that lets coding agents observe a Chromium
@@ -21,10 +21,10 @@ with docs/json-contract.md and docs/security-model.md.
 
 ## Detailed description
 
-Coding agents should not click web pages by pixel. pagouse puts a page agent
-inside Chromium: it returns an accessibility tree where every actionable node
-carries a stable ref label, then clicks, fills, types, and navigates those
-nodes on demand.
+By ref, not by pixel. pagouse is a page agent for coding agents: it reads
+Chromium pages through their accessibility tree, hands your agent stable ref
+labels, and — only with an explicit grant — clicks, fills, types, and
+navigates those nodes.
 
 - Observe by default. Mutation requires an explicit grant (--allow-input).
 - Refs live inside the page, so snapshots and actions can run as separate

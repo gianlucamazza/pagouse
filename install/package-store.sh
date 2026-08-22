@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # Build the Chrome Web Store zip from committed extension/ sources.
 # Fails if extension/ is dirty or the two version stamps disagree.
+#
+# The store rejects a "key" field in manifest.json, but local unpacked
+# loads rely on it to pin the extension id for the native-messaging
+# allowlist. So: stage HEAD:extension, drop "key", zip the staging copy.
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -23,8 +27,31 @@ CORE_VER="$(sed -n 's/^__version__ = "\(.*\)"$/\1/p' src/pagouse/__init__.py)"
 [[ -z "$(git status --porcelain -- extension)" ]] ||
 	die "extension/ has uncommitted changes; commit them first"
 
-mkdir -p dist
+STAGE="$(mktemp -d)"
+trap 'rm -rf "$STAGE"' EXIT
 OUT="dist/pagouse-extension-$MANIFEST_VER.zip"
-git archive --format=zip -o "$OUT" HEAD:extension
+git archive --format=tar HEAD:extension | tar -x -C "$STAGE"
 
-echo "$OUT"
+python3 - "$STAGE" "$OUT" <<'EOF'
+import json, os, sys, zipfile
+
+stage, out = sys.argv[1], sys.argv[2]
+manifest = os.path.join(stage, "manifest.json")
+with open(manifest) as fh:
+    data = json.load(fh)
+if data.pop("key", None) is not None:
+    print("package-store: dropped manifest key for the store build")
+with open(manifest, "w") as fh:
+    json.dump(data, fh, indent=2)
+    fh.write("\n")
+
+entries = []
+for root, _dirs, files in os.walk(stage):
+    for name in files:
+        full = os.path.join(root, name)
+        entries.append((os.path.relpath(full, stage), full))
+with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as zf:
+    for rel, full in sorted(entries):
+        zf.write(full, rel)
+print(f"package-store: {out}")
+EOF

@@ -4,10 +4,10 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Python 3.13+](https://img.shields.io/badge/python-3.13%2B-blue.svg)](pyproject.toml)
 
-**Coding agents should not click web pages by pixel.** pagouse is a page
-agent: a Chromium extension on the daily profile that returns an
-accessibility tree with `ref_N` labels, and (with a grant) clicks, fills,
-and navigates those nodes.
+**By ref, not by pixel.** pagouse is a page agent for coding agents: a
+Chromium extension on the daily profile that reads the accessibility tree,
+hands your agent stable `ref_N` labels, and — only with a grant — clicks,
+fills, and navigates those nodes.
 
 It observes by default. Mutation needs `--allow-input`. The optional MCP
 server is observe-only and cannot be talked into typing.

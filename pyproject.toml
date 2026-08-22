@@ -1,6 +1,6 @@
 [project]
 name = "pagouse"
-description = "Chromium page agent for coding agents."
+description = "By ref, not by pixel: a Chromium page agent for coding agents."
 readme = "README.md"
 requires-python = ">=3.13"
 license = "MIT"
