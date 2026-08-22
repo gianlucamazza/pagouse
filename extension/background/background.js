@@ -74,8 +74,10 @@ function connect() {
   port.onDisconnect.addListener(() => {
     port = null;
     let delay = 200;
+    let retries = 0;
+    const maxRetries = 5;
     const retry = () => {
-      if (port) return;
+      if (port || retries++ >= maxRetries) return;
       connect();
       if (!port) {
         delay = Math.min(delay * 2, 4000);
