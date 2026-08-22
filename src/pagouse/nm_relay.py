@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import select
 import shutil
@@ -87,13 +88,11 @@ def main() -> int:
                     line, leftover = leftover.split(b"\n", 1)
                     if not line.strip():
                         continue
-                    import json
-
                     payload = json.loads(bytes(line).decode())
                     if isinstance(payload, dict):
                         stdout.write(nm_pack(payload))
                         stdout.flush()
-    except (OSError, ValueError):
+    except (OSError, json.JSONDecodeError):
         return 1
     finally:
         daemon.close()

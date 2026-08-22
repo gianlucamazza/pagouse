@@ -49,13 +49,16 @@ def shot(tab_id: int | None = None, *, fit: int = DEFAULT_FIT) -> dict[str, Any]
     width = int(reply.get("width") or 0)
     height = int(reply.get("height") or 0)
     saved = save_data_url(data_url, width=width, height=height, fit=fit)
-    return {
+    result: dict[str, Any] = {
         "tab_id": reply.get("tab_id"),
         "path": saved["path"],
         "width": saved["width"],
         "height": saved["height"],
         "scale": saved["scale"],
     }
+    if saved.get("fit_skipped"):
+        result["fit_skipped"] = True
+    return result
 
 
 def wait(

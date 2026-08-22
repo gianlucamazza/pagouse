@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+__all__ = ["DEFAULT_FIT", "SCHEMA", "envelope"]
+
 SCHEMA = 1
 DEFAULT_FIT = 1568
 

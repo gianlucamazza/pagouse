@@ -11,6 +11,7 @@ from pagouse import __version__
 from pagouse.contract import DEFAULT_FIT
 from pagouse.contract import envelope as _envelope
 from pagouse.errors import PagouseError
+from pagouse.log import setup
 
 _EXIT_2 = frozenset({"readonly", "denied", "origin_changed", "bad_arg", "bad_config", "usage"})
 
@@ -107,6 +108,7 @@ def cmd_scroll(args: argparse.Namespace) -> int:
         tab_id=args.tab,
         allow_input=args.allow_input,
         then=args.then,
+        delay_ms=args.delay,
     )
     payload = _envelope(ok=True, action="scroll", data=data)
     return _print(payload, as_json=args.json, human=f"scrolled {args.ref}\n")
@@ -120,6 +122,7 @@ def cmd_click(args: argparse.Namespace) -> int:
         tab_id=args.tab,
         allow_input=args.allow_input,
         then=args.then,
+        delay_ms=args.delay,
     )
     payload = _envelope(ok=True, action="click", data=data)
     return _print(payload, as_json=args.json, human=f"clicked {args.ref}\n")
@@ -134,6 +137,7 @@ def cmd_fill(args: argparse.Namespace) -> int:
         tab_id=args.tab,
         allow_input=args.allow_input,
         then=args.then,
+        delay_ms=args.delay,
     )
     payload = _envelope(ok=True, action="fill", data=data)
     return _print(payload, as_json=args.json, human=f"filled {args.ref}\n")
@@ -147,6 +151,7 @@ def cmd_type(args: argparse.Namespace) -> int:
         tab_id=args.tab,
         allow_input=args.allow_input,
         then=args.then,
+        delay_ms=args.delay,
     )
     payload = _envelope(ok=True, action="type", data=data)
     return _print(payload, as_json=args.json, human=f"typed {data.get('typed')}\n")
@@ -160,6 +165,7 @@ def cmd_key(args: argparse.Namespace) -> int:
         tab_id=args.tab,
         allow_input=args.allow_input,
         then=args.then,
+        delay_ms=args.delay,
     )
     payload = _envelope(ok=True, action="key", data=data)
     return _print(payload, as_json=args.json, human=f"key {args.combo}\n")
@@ -173,6 +179,7 @@ def cmd_navigate(args: argparse.Namespace) -> int:
         tab_id=args.tab,
         allow_input=args.allow_input,
         then=args.then,
+        delay_ms=args.delay,
     )
     payload = _envelope(ok=True, action="navigate", data=data)
     return _print(payload, as_json=args.json, human=f"navigate {data.get('url')}\n")
@@ -181,7 +188,7 @@ def cmd_navigate(args: argparse.Namespace) -> int:
 def cmd_tab_open(args: argparse.Namespace) -> int:
     from pagouse.mutate import tab_open
 
-    data = tab_open(args.url, allow_input=args.allow_input, then=args.then)
+    data = tab_open(args.url, allow_input=args.allow_input, then=args.then, delay_ms=args.delay)
     payload = _envelope(ok=True, action="tab_open", data=data)
     return _print(payload, as_json=args.json, human=f"tab {data.get('tab_id')}\n")
 
@@ -222,6 +229,7 @@ def build_parser() -> argparse.ArgumentParser:
         description="Observe (and with a grant, drive) a Chromium page.",
     )
     p.add_argument("--json", action="store_true", help="machine-readable envelope")
+    p.add_argument("--verbose", action="store_true", help="enable debug logging")
     p.add_argument(
         "--allow-input",
         action="store_true",
@@ -281,12 +289,26 @@ def build_parser() -> argparse.ArgumentParser:
     sc.add_argument("--ref", required=True, help="ref_N from snapshot")
     sc.add_argument("--tab", type=int, metavar="ID")
     sc.add_argument("--then", **then)
+    sc.add_argument(
+        "--delay",
+        type=int,
+        default=450,
+        metavar="MS",
+        help="ms to wait before --then snapshot (default 450)",
+    )
     sc.set_defaults(func=cmd_scroll)
 
     click = sub.add_parser("click", help="click the element for a snapshot ref")
     click.add_argument("--ref", required=True, help="ref_N from snapshot")
     click.add_argument("--tab", type=int, metavar="ID")
     click.add_argument("--then", **then)
+    click.add_argument(
+        "--delay",
+        type=int,
+        default=450,
+        metavar="MS",
+        help="ms to wait before --then snapshot (default 450)",
+    )
     click.set_defaults(func=cmd_click)
 
     fill = sub.add_parser("fill", help="set a form control and fire input/change")
@@ -294,29 +316,64 @@ def build_parser() -> argparse.ArgumentParser:
     fill.add_argument("--value", required=True)
     fill.add_argument("--tab", type=int, metavar="ID")
     fill.add_argument("--then", **then)
+    fill.add_argument(
+        "--delay",
+        type=int,
+        default=450,
+        metavar="MS",
+        help="ms to wait before --then snapshot (default 450)",
+    )
     fill.set_defaults(func=cmd_fill)
 
     typ = sub.add_parser("type", help="type into the focused element of the tab")
     typ.add_argument("text")
     typ.add_argument("--tab", type=int, metavar="ID")
     typ.add_argument("--then", **then)
+    typ.add_argument(
+        "--delay",
+        type=int,
+        default=450,
+        metavar="MS",
+        help="ms to wait before --then snapshot (default 450)",
+    )
     typ.set_defaults(func=cmd_type)
 
     key = sub.add_parser("key", help="press a combo such as Enter or ctrl+a")
     key.add_argument("combo")
     key.add_argument("--tab", type=int, metavar="ID")
     key.add_argument("--then", **then)
+    key.add_argument(
+        "--delay",
+        type=int,
+        default=450,
+        metavar="MS",
+        help="ms to wait before --then snapshot (default 450)",
+    )
     key.set_defaults(func=cmd_key)
 
     nav = sub.add_parser("navigate", help="go to a URL, or back/forward")
     nav.add_argument("url")
     nav.add_argument("--tab", type=int, metavar="ID")
     nav.add_argument("--then", **then)
+    nav.add_argument(
+        "--delay",
+        type=int,
+        default=450,
+        metavar="MS",
+        help="ms to wait before --then snapshot (default 450)",
+    )
     nav.set_defaults(func=cmd_navigate)
 
     opened = sub.add_parser("tab_open", help="open a new tab")
     opened.add_argument("url", nargs="?", default=None)
     opened.add_argument("--then", **then)
+    opened.add_argument(
+        "--delay",
+        type=int,
+        default=450,
+        metavar="MS",
+        help="ms to wait before --then snapshot (default 450)",
+    )
     opened.set_defaults(func=cmd_tab_open)
 
     focus = sub.add_parser("tab_focus", help="activate a tab by id")
@@ -337,6 +394,7 @@ def main(argv: list[str] | None = None) -> int:
         args = parser.parse_args(argv)
     except SystemExit as exc:
         return int(exc.code or 0)
+    setup(verbose=args.verbose)
     try:
         return int(args.func(args))
     except PagouseError as exc:

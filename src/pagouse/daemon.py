@@ -13,6 +13,7 @@ from typing import Any
 
 from pagouse.errors import PagouseError
 from pagouse.ipc import send_line
+from pagouse.log import logger
 from pagouse.paths import socket_path
 
 MUTATE_OPS = frozenset(
@@ -20,11 +21,13 @@ MUTATE_OPS = frozenset(
 )
 _FORWARD_TIMEOUT = 8.0
 _CAPS_TIMEOUT = 1.5
+_MAX_CONCURRENT = 16
 
 
 class Hub:
-    def __init__(self) -> None:
+    def __init__(self, max_concurrent: int = _MAX_CONCURRENT) -> None:
         self.lock = threading.Lock()
+        self.semaphore = threading.Semaphore(max_concurrent)
         self.extension: socket.socket | None = None
         self.browser = ""
         self.pending: dict[int, Queue[dict[str, Any]]] = {}
@@ -66,6 +69,12 @@ class Hub:
             "all_urls": bool(reply.get("all_urls")),
         }
 
+    def _serve(self, conn: socket.socket) -> None:
+        try:
+            self.serve(conn)
+        finally:
+            self.semaphore.release()
+
     def serve(self, conn: socket.socket) -> None:
         reader = conn.makefile("r", encoding="utf-8")
         try:
@@ -76,6 +85,7 @@ class Hub:
                 try:
                     msg = json.loads(line)
                 except ValueError:
+                    logger.debug("invalid json from client")
                     send_line(
                         conn,
                         {
@@ -95,6 +105,7 @@ class Hub:
                 if conn is self.extension:
                     self.extension = None
                     self.browser = ""
+                    logger.info("extension disconnected")
             with contextlib.suppress(OSError):
                 conn.close()
 
@@ -103,6 +114,7 @@ class Hub:
             with self.lock:
                 self.extension = conn
                 self.browser = str(msg.get("browser") or "")
+            logger.info("extension connected (browser=%s)", self.browser)
             send_line(conn, {"ok": True, "op": "hello"})
             return
         with self.lock:
@@ -125,9 +137,11 @@ class Hub:
             send_line(conn, reply)
             return
         if op in MUTATE_OPS:
+            logger.debug("mutate op=%s", op)
             try:
                 self._gate_mutate(msg)
             except PagouseError as exc:
+                logger.warning("mutate gate failed: %s", exc.message)
                 send_line(
                     conn,
                     {
@@ -233,7 +247,8 @@ def listen(path: Any | None = None) -> int:
             except TimeoutError:
                 continue
             conn.settimeout(None)
-            threading.Thread(target=hub.serve, args=(conn,), daemon=True).start()
+            hub.semaphore.acquire()
+            threading.Thread(target=hub._serve, args=(conn,), daemon=True).start()
     finally:
         server.close()
         target.unlink(missing_ok=True)

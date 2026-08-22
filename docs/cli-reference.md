@@ -3,7 +3,7 @@
 `pagouse --json <command>` is the agent surface. Without `--json` the same
 commands print a short human summary. `--version` prints the package version.
 
-Global flags: `--json`, `--allow-input`, `--version`.
+Global flags: `--json`, `--verbose`, `--allow-input`, `--version`.
 
 ## Commands
 
@@ -14,13 +14,13 @@ Global flags: `--json`, `--allow-input`, `--version`.
 | `snapshot` | Accessibility tree with `ref_N`. `--tab ID`, `--filter interactive\|all`, `--depth`, `--max-chars` |
 | `shot` | Viewport PNG. `--tab ID`, `--fit PX` (default 1568; `0` disables) |
 | `wait` | Poll until `--url-contains` or `--ref`. `--tab ID`, `--timeout MS` (default 5000) |
-| `scroll` | `--ref ref_N` into view. Optional `--tab ID`, `--then snapshot` |
-| `click` | `--ref ref_N`. Optional `--tab ID`, `--then snapshot` |
-| `fill` | `--ref ref_N --value TEXT`. Optional `--tab ID`, `--then snapshot` |
-| `type` | Unicode into the focused control. Optional `--tab ID`, `--then snapshot` |
-| `key` | Combo such as `Enter` or `ctrl+a`. Optional `--tab ID`, `--then snapshot` |
-| `navigate` | URL, or `back` / `forward`. Optional `--tab ID`, `--then snapshot` |
-| `tab_open` | Optional URL argument, `--then snapshot` |
+| `scroll` | `--ref ref_N` into view. Optional `--tab ID`, `--then snapshot`, `--delay MS` (default 450) |
+| `click` | `--ref ref_N`. Optional `--tab ID`, `--then snapshot`, `--delay MS` (default 450) |
+| `fill` | `--ref ref_N --value TEXT`. Optional `--tab ID`, `--then snapshot`, `--delay MS` (default 450) |
+| `type` | Unicode into the focused control. Optional `--tab ID`, `--then snapshot`, `--delay MS` (default 450) |
+| `key` | Combo such as `Enter` or `ctrl+a`. Optional `--tab ID`, `--then snapshot`, `--delay MS` (default 450) |
+| `navigate` | URL, or `back` / `forward`. Optional `--tab ID`, `--then snapshot`, `--delay MS` (default 450) |
+| `tab_open` | Optional URL argument, `--then snapshot`, `--delay MS` (default 450) |
 | `tab_focus` | `--tab ID` |
 | `daemon` | Foreground router. `--stop` tears it down |
 

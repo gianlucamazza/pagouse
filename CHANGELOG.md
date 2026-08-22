@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.3.0] — 2026-08-22
+
+### Added
+
+- `--verbose` flag and `PAGOUSE_LOG` environment variable for structured
+  stdlib logging (levels: `debug`, `info`, `warning`, `error`).
+- `--delay MS` on mutate commands (`click`, `fill`, `type`, `key`,
+  `navigate`, `tab_open`, `scroll`) to configure the wait before
+  `--then snapshot` (default 450 ms).
+- `fit_skipped: true` in the `shot` envelope when ImageMagick is not
+  installed, so the resize cap is no longer silently skipped.
+- `__all__` on core modules (`contract`, `errors`, `models`) to declare
+  the public API.
+- Explicit Content Security Policy in the extension manifest.
+
+### Changed
+
+- `nm_relay.py` catches `json.JSONDecodeError` instead of bare
+  `ValueError`, so `KeyboardInterrupt` and `SystemExit` are no longer
+  swallowed.
+- `pagoused` limits concurrent client threads to 16 via a semaphore.
+- SPA pages: dead WeakRef entries are purged from `__pagouseRefs` on each
+  new ref, preventing unbounded Map growth.
+
+### Removed
+
+- Unused `storage` permission from the extension manifest.
+
 ## [Unreleased]
 
 ### Added

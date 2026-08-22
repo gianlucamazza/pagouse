@@ -28,13 +28,13 @@ def fit_scale(width: int, height: int, long_edge: int) -> tuple[float, int, int]
 
 def apply_fit(
     path: Path, width: int, height: int, scale: float, long_edge: int
-) -> tuple[float, int, int]:
+) -> tuple[float, int, int, bool]:
     factor, new_w, new_h = fit_scale(width, height, long_edge)
     if factor == 1.0:
-        return scale, width, height
+        return scale, width, height, False
     magick = shutil.which("magick")
     if not magick:
-        return scale, width, height
+        return scale, width, height, True
     proc = subprocess.run(
         [magick, str(path), "-resize", f"{long_edge}x{long_edge}>", str(path)],
         check=False,
@@ -43,8 +43,8 @@ def apply_fit(
         timeout=15,
     )
     if proc.returncode != 0:
-        return scale, width, height
-    return scale * factor, new_w, new_h
+        return scale, width, height, True
+    return scale * factor, new_w, new_h, False
 
 
 def _gc_old_shots(directory: Path, *, max_age_s: int = 1800) -> None:
@@ -75,5 +75,8 @@ def save_data_url(
     dest.write_bytes(base64.b64decode(blob))
     with contextlib.suppress(OSError):
         dest.chmod(0o600)
-    scale, out_w, out_h = apply_fit(dest, width, height, 1.0, fit)
-    return {"path": str(dest), "width": out_w, "height": out_h, "scale": scale}
+    scale, out_w, out_h, fit_skipped = apply_fit(dest, width, height, 1.0, fit)
+    result: dict[str, object] = {"path": str(dest), "width": out_w, "height": out_h, "scale": scale}
+    if fit_skipped:
+        result["fit_skipped"] = True
+    return result

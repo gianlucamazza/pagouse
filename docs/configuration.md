@@ -26,6 +26,7 @@ A bare string in a list key is one token, not a sequence of characters.
 |----------|---------|
 | `PAGOUSE_CONFIG` | Absolute path to `config.toml` (wins over XDG) |
 | `PAGOUSE_ALLOW_INPUT` | `1` / `true` / `yes` — page grant for this process |
+| `PAGOUSE_LOG` | Log level: `debug`, `info`, `warning` (default), `error` |
 | `XDG_CONFIG_HOME` | Config root; also searched for Chromium NativeMessagingHosts |
 | `XDG_RUNTIME_DIR` | Daemon socket and shot files (`$XDG_RUNTIME_DIR/pagouse/`) |
 

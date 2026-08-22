@@ -147,6 +147,10 @@
     for (const [ref, wr] of globalThis.__pagouseRefs) {
       if (wr.deref() === el) return ref;
     }
+    // Purge dead refs to avoid unbounded Map growth on SPA navigation.
+    for (const [ref, wr] of globalThis.__pagouseRefs) {
+      if (!wr.deref()) globalThis.__pagouseRefs.delete(ref);
+    }
     const prefix = globalThis.__pagousePrefix || "";
     const ref = `ref_${prefix}${globalThis.__pagouseNext++}`;
     globalThis.__pagouseRefs.set(ref, new WeakRef(el));

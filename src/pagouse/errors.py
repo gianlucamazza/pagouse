@@ -2,6 +2,21 @@
 
 from __future__ import annotations
 
+__all__ = [
+    "BadArg",
+    "BadConfig",
+    "Denied",
+    "IpcFailed",
+    "NoSession",
+    "NoTab",
+    "OriginChanged",
+    "PagouseError",
+    "Readonly",
+    "RestrictedPage",
+    "StaleRef",
+    "WaitTimeout",
+]
+
 
 class PagouseError(Exception):
     def __init__(self, code: str, message: str) -> None:

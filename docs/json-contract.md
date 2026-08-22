@@ -26,7 +26,7 @@ Failure:
 | `doctor` | `ready`, `observe_ready`, `shot_ready`, `mutate_ready`, `version`, `session`, `checks`, `blockers` |
 | `tabs` | `tabs` (`id`, `url`, `title`, `active`, `origin`, `scriptable`), `active` |
 | `snapshot` | `snapshot` (`tab_id`, `url`, `title`, `tree`, `refs`, `filter`); optional `frame_errors` |
-| `shot` | `shot` (`tab_id`, `path`, `width`, `height`, `scale`) |
+| `shot` | `shot` (`tab_id`, `path`, `width`, `height`, `scale`); optional `fit_skipped` when ImageMagick is missing |
 | `wait` | `tab_id`, `url`, `matched` (`url` or `ref`), `timeout_ms` |
 | `scroll` | `tab_id`, `ref`; optional `snapshot` if `--then snapshot` |
 | `click` | `tab_id`, `ref`; optional `snapshot` if `--then snapshot` |
