@@ -53,5 +53,11 @@ for root, _dirs, files in os.walk(stage):
 with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as zf:
     for rel, full in sorted(entries):
         zf.write(full, rel)
+
+# The store rejects the key field; verify the artifact we just wrote.
+with zipfile.ZipFile(out) as zf:
+    if b'"key"' in zf.read("manifest.json"):
+        print("package-store: manifest key survived packaging", file=sys.stderr)
+        raise SystemExit(1)
 print(f"package-store: {out}")
 EOF

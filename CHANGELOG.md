@@ -2,6 +2,23 @@
 
 ## [Unreleased]
 
+### Added
+
+- Error code `restricted_page` (exit 1) for pages Chromium refuses to
+  script, instead of a misleading `ipc_failed`.
+- `tabs` rows carry `scriptable: false` for the Web Store gallery.
+- `snapshot` may carry optional `frame_errors` when sub-frames cannot be
+  read; the rest of the tree stays valid.
+- `doctor` reports the connected extension's version and site access:
+  a known mismatch blocks as `extension_version`; site access clears
+  `shot_ready`.
+
+### Fixed
+
+- The native-messaging host template allowlists both extension ids
+  (unpacked and Chrome Web Store), so a store install keeps working.
+- `package-store.sh` verifies the store zip has no manifest `key`.
+
 ## [0.2.0] — 2026-08-22
 
 ### Added

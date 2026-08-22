@@ -64,7 +64,7 @@ function connect() {
     handle(msg)
       .catch((err) => ({
         ok: false,
-        error: "ipc_failed",
+        error: err && err.code ? String(err.code) : "ipc_failed",
         message: String(err && err.message ? err.message : err),
       }))
       .then((reply) => {
@@ -89,11 +89,36 @@ function connect() {
 async function ensureAx(tabId, frameId) {
   const target =
     frameId != null ? { tabId, frameIds: [frameId] } : { tabId, allFrames: true };
-  await chrome.scripting.executeScript({
-    target,
-    files: ["content/ax.js"],
-    world: "ISOLATED",
-  });
+  await execScript(target, { files: ["content/ax.js"] });
+}
+
+// Chromium refuses injection on some pages (Web Store gallery, privileged
+// origins) or when site access is restricted. Those are policy outcomes,
+// not transport faults: tag them so the reply carries a stable code.
+function classifyInject(err) {
+  const text = String(err && err.message ? err.message : err);
+  if (
+    /cannot be scripted|cannot access contents of|has not been invoked/i.test(
+      text,
+    )
+  ) {
+    const tagged = new Error(text);
+    tagged.code = "restricted_page";
+    throw tagged;
+  }
+  throw err;
+}
+
+async function execScript(target, options) {
+  try {
+    return await chrome.scripting.executeScript({
+      target,
+      world: "ISOLATED",
+      ...options,
+    });
+  } catch (err) {
+    return classifyInject(err);
+  }
 }
 
 function parseRef(ref) {
@@ -116,6 +141,16 @@ async function pickTab(tabId) {
   return all.find((t) => !schemeBlocked(t.url || "")) || null;
 }
 
+// Origins Chromium refuses to script regardless of host permissions.
+const UNSCRIPTABLE = [
+  "https://chrome.google.com/webstore",
+  "https://chromewebstore.google.com",
+];
+
+function scriptable(url) {
+  return !UNSCRIPTABLE.some((prefix) => (url || "").startsWith(prefix));
+}
+
 async function listTabs() {
   const raw = await chrome.tabs.query({});
   const tabs = raw
@@ -126,6 +161,7 @@ async function listTabs() {
       title: t.title || "",
       active: Boolean(t.active),
       origin: originOf(t.url),
+      scriptable: scriptable(t.url),
     }));
   const active = tabs.find((t) => t.active)?.id ?? tabs[0]?.id ?? null;
   return { ok: true, op: "tabs", tabs, active };
@@ -135,12 +171,7 @@ async function runInTab(tab, func, args, frameId) {
   await ensureAx(tab.id, frameId);
   const target =
     frameId != null ? { tabId: tab.id, frameIds: [frameId] } : { tabId: tab.id };
-  const [inj] = await chrome.scripting.executeScript({
-    target,
-    world: "ISOLATED",
-    func,
-    args,
-  });
+  const [inj] = await execScript(target, { func, args });
   return inj && inj.result;
 }
 
@@ -196,7 +227,14 @@ function originChanged(tab, expected) {
 
 async function handle(msg) {
   const op = msg.op;
-  if (op === "ping" || op === "hello") return { ok: true, op };
+  if (op === "ping" || op === "hello") {
+    return {
+      ok: true,
+      op,
+      version: chrome.runtime.getManifest().version,
+      all_urls: await hasAllUrls(),
+    };
+  }
   if (op === "tabs") return listTabs();
 
   const tab = await pickTab(msg.tab_id);
@@ -212,25 +250,35 @@ async function handle(msg) {
       maxChars: msg.max_chars || 50000,
     };
     await ensureAx(tab.id);
-    const probes = await chrome.scripting.executeScript({
-      target: { tabId: tab.id, allFrames: true },
-      world: "ISOLATED",
-      func: () => ({ href: location.href, title: document.title }),
-    });
+    const probes = await execScript(
+      { tabId: tab.id, allFrames: true },
+      { func: () => ({ href: location.href, title: document.title }) },
+    );
     const chunks = [];
+    const frameErrors = [];
     let refs = 0;
     let filter = opts.filter;
-    for (const probe of probes) {
-      if (probe.frameId == null || probe.error) continue;
+    for (const probe of probes || []) {
+      if (probe.frameId == null) continue;
       const fid = probe.frameId;
-      const [inj] = await chrome.scripting.executeScript({
-        target: { tabId: tab.id, frameIds: [fid] },
-        world: "ISOLATED",
-        func: (o) => globalThis.__pagouse.snapshot(o),
-        args: [{ ...opts, refPrefix: `f${fid}_` }],
-      });
-      const result = inj && inj.result;
-      if (!result || result.ok === false) continue;
+      let result = null;
+      try {
+        const [inj] = await execScript(
+          { tabId: tab.id, frameIds: [fid] },
+          {
+            func: (o) => globalThis.__pagouse.snapshot(o),
+            args: [{ ...opts, refPrefix: `f${fid}_` }],
+          },
+        );
+        result = inj && inj.result;
+        if (result && result.ok === false) result = null;
+      } catch (err) {
+        // A restricted sub-frame must not void the snapshot; a failed
+        // main frame is the whole answer.
+        if (fid === 0) throw err;
+        frameErrors.push({ frame: fid, reason: String(err.message || err) });
+        continue;
+      }
       filter = result.filter || filter;
       refs += result.refs || 0;
       const href = result.url || (probe.result && probe.result.href) || "";
@@ -238,7 +286,7 @@ async function handle(msg) {
       else chunks.push(`iframe ${href}\n${result.tree || ""}`);
     }
     if (!chunks.length) return { ok: false, error: "ipc_failed", message: "snapshot failed" };
-    return {
+    const reply = {
       ok: true,
       op: "snapshot",
       tab_id: tab.id,
@@ -248,6 +296,8 @@ async function handle(msg) {
       refs,
       filter,
     };
+    if (frameErrors.length) reply.frame_errors = frameErrors;
+    return reply;
   }
 
   if (op === "shot") {
@@ -286,11 +336,11 @@ async function handle(msg) {
         height: tab.height || 0,
       };
     } catch (err) {
-      return {
-        ok: false,
-        error: "ipc_failed",
-        message: `shot: ${err && err.message ? err.message : err}`,
-      };
+      const text = String(err && err.message ? err.message : err);
+      const code = /activeTab|not in effect|not authorized/i.test(text)
+        ? "denied"
+        : "ipc_failed";
+      return { ok: false, error: code, message: `shot: ${text}` };
     }
   }
 

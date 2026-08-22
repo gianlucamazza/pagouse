@@ -1,9 +1,17 @@
 # Release
 
-How to cut a pagouse release and ship it to the Chrome Web Store. The
-extension id is pinned by the `key` in `extension/manifest.json`, so the
-store item and a local unpacked load share one identity and the
-native-messaging allowlist never changes.
+How to cut a pagouse release and ship it to the Chrome Web Store.
+
+## Extension ids: local and store are different
+
+The manifest carries a `key` so a local **unpacked** load pins the id
+`omnnhbbobflobnhmlfibhobmeodacbig`. The store rejects that field in
+uploaded packages, so it assigns its own id — currently
+`nahhkjknnnnmehcppbiimcobbicigfac` (read it from the dashboard item URL
+after the first upload). `install/package-store.sh` strips `key` from the
+store zip and verifies it stayed stripped. The native-messaging host
+template allowlists both ids; if the store ever re-assigns one, add it
+there.
 
 ## Version bump
 
@@ -72,5 +80,6 @@ waiting period before tagging the release as shipped.
 ## After publishing
 
 On an installed machine: `pagouse --json doctor` should still report
-`ready` — the store item keeps the pinned extension id, so native messaging
-needs no change.
+`ready`. The host manifest allowlists both the unpacked and the store
+extension ids; installs made before a store build existed need one
+re-run of `install/install-host.sh` to pick up both entries.

@@ -33,6 +33,13 @@ class IpcFailed(PagouseError):
         super().__init__("ipc_failed", detail)
 
 
+class RestrictedPage(PagouseError):
+    """Chromium forbids scripting this page (Web Store gallery, chrome pages)."""
+
+    def __init__(self, detail: str) -> None:
+        super().__init__("restricted_page", detail)
+
+
 class Readonly(PagouseError):
     def __init__(self, message: str = "input disabled (readonly)") -> None:
         super().__init__("readonly", message)

@@ -19,6 +19,7 @@ MUTATE_OPS = frozenset(
     {"click", "fill", "type", "key", "navigate", "tab_open", "tab_focus", "scroll"}
 )
 _FORWARD_TIMEOUT = 8.0
+_CAPS_TIMEOUT = 1.5
 
 
 class Hub:
@@ -40,6 +41,29 @@ class Hub:
             "extension": connected,
             "browser": browser,
             "tabs": 0,
+        }
+
+    def capabilities(self) -> dict[str, Any]:
+        """Ask the connected extension for version and site-access, briefly."""
+        with self.lock:
+            ext = self.extension
+            if ext is None:
+                return {"version": "", "all_urls": False}
+            rid = self.next_id
+            self.next_id += 1
+            waiter: Queue[dict[str, Any]] = Queue()
+            self.pending[rid] = waiter
+        try:
+            send_line(ext, {"op": "ping", "id": rid})
+            reply = waiter.get(timeout=_CAPS_TIMEOUT)
+        except (OSError, Empty):
+            return {"version": "", "all_urls": False}
+        finally:
+            with self.lock:
+                self.pending.pop(rid, None)
+        return {
+            "version": str(reply.get("version") or ""),
+            "all_urls": bool(reply.get("all_urls")),
         }
 
     def serve(self, conn: socket.socket) -> None:
@@ -96,7 +120,9 @@ class Hub:
             self.stopped = True
             return
         if op in {"ping", "status"}:
-            send_line(conn, self.status())
+            reply = self.status()
+            reply.update(self.capabilities())
+            send_line(conn, reply)
             return
         if op in MUTATE_OPS:
             try:

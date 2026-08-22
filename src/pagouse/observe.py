@@ -30,7 +30,7 @@ def snapshot(
         depth=depth,
         max_chars=max_chars,
     )
-    return {
+    data = {
         "tab_id": reply.get("tab_id"),
         "url": reply.get("url"),
         "title": reply.get("title"),
@@ -38,6 +38,9 @@ def snapshot(
         "refs": int(reply.get("refs") or 0),
         "filter": reply.get("filter") or filter,
     }
+    if reply.get("frame_errors"):
+        data["frame_errors"] = reply["frame_errors"]
+    return data
 
 
 def shot(tab_id: int | None = None, *, fit: int = DEFAULT_FIT) -> dict[str, Any]:

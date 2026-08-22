@@ -24,8 +24,8 @@ Failure:
 | action | extra keys on success |
 |--------|------------------------|
 | `doctor` | `ready`, `observe_ready`, `shot_ready`, `mutate_ready`, `version`, `session`, `checks`, `blockers` |
-| `tabs` | `tabs` (`id`, `url`, `title`, `active`, `origin`), `active` |
-| `snapshot` | `snapshot` (`tab_id`, `url`, `title`, `tree`, `refs`, `filter`) |
+| `tabs` | `tabs` (`id`, `url`, `title`, `active`, `origin`, `scriptable`), `active` |
+| `snapshot` | `snapshot` (`tab_id`, `url`, `title`, `tree`, `refs`, `filter`); optional `frame_errors` |
 | `shot` | `shot` (`tab_id`, `path`, `width`, `height`, `scale`) |
 | `wait` | `tab_id`, `url`, `matched` (`url` or `ref`), `timeout_ms` |
 | `scroll` | `tab_id`, `ref`; optional `snapshot` if `--then snapshot` |
@@ -42,13 +42,21 @@ Failure:
 (default long edge 1568). `--fit 0` disables the cap.
 
 `doctor` uses `ok: true` when the envelope is well-formed; readiness is `ready`.
-`ready` / `observe_ready` / `shot_ready` / `mutate_ready` mean native host,
-daemon, and extension are connected. The grant is separate: `mutate_ready`
-does not imply `--allow-input`.
+`ready` / `observe_ready` / `mutate_ready` mean native host, daemon, and
+extension are connected and the extension version matches the CLI.
+`shot_ready` additionally requires site access On all sites. The ping
+carries the extension's `version` and `all_urls` grant in `session`; a known
+version mismatch blocks as `extension_version`. The site-access grant is not
+a blocker; it only clears `shot_ready`. The page grant is separate:
+`mutate_ready` does not imply `--allow-input`.
 
-Tab: `id`, `url`, `title`, `active`, `origin`.
+Tab: `id`, `url`, `title`, `active`, `origin`, `scriptable`. `scriptable` is
+`false` for origins Chromium refuses to script (the Web Store gallery) — do
+not snapshot or drive those tabs.
 `snapshot.tree` is an indented accessibility tree. Each actionable node has a
 `[ref_N]` label. Password and secret fields serialize as `[redacted]`.
+Optional `snapshot.frame_errors` lists `{frame, reason}` for sub-frames that
+could not be read; the rest of the tree is still valid.
 
 ## Error codes
 
@@ -58,6 +66,7 @@ Tab: `id`, `url`, `title`, `active`, `origin`.
 | `no_tab` | 1 | `--tab` id not found or no usable http(s) tab |
 | `stale_ref` | 1 | `ref_N` is no longer in the document. **Do not retry the same ref.** |
 | `ipc_failed` | 1 | native-messaging or unix socket failed |
+| `restricted_page` | 1 | Chromium refuses scripting this page (Web Store gallery, privileged origins) |
 | `readonly` | 2 | mutate without flag, env, or `allow_input` in config |
 | `denied` | 2 | origin/scheme refused by policy |
 | `origin_changed` | 2 | the tab navigated to another origin during the action |
