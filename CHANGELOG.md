@@ -29,11 +29,16 @@
 - SPA pages: dead WeakRef entries are purged from `__pagouseRefs` on each
   new ref, preventing unbounded Map growth.
 
+### Fixed
+
+- Native-messaging retry limited to 5 attempts so Chromium can close
+  cleanly when the daemon is unavailable.
+
 ### Removed
 
 - Unused `storage` permission from the extension manifest.
 
-## [Unreleased]
+## [0.3.0] — 2026-08-22
 
 ### Added
 

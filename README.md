@@ -77,8 +77,8 @@ envelope and error codes: [docs/json-contract.md](docs/json-contract.md).
 ## MCP extra and agent skill
 
 `uv tool install 'pagouse[mcp]'` provides `pagouse-mcp`: read-only
-observation tools only. There is no mutate tool; drive the page through the
-CLI and a grant.
+observation tools only (`doctor`, `tabs`, `snapshot`, `shot`, `wait`, `wait_ref`).
+There is no mutate tool; drive the page through the CLI and a grant.
 
 `install.sh` also links `skills/pagouse/SKILL.md` into any existing agent
 skill root, so your agents get the playbook without setup.
