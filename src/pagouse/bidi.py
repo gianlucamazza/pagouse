@@ -22,8 +22,19 @@ from contextlib import suppress
 from pathlib import Path
 from typing import Any
 
-from pagouse.errors import BadConfig, IpcFailed, NoSession, NoTab, WebDriverError
-from pagouse.paths import runtime_dir
+from pagouse.errors import (
+    BadConfig,
+    ContextNotFound,
+    IpcFailed,
+    NoSession,
+    NoTab,
+    SessionRecoveryFailed,
+    SessionStartFailed,
+    StaleMetadata,
+    WebDriverError,
+    WebDriverUnavailable,
+)
+from pagouse.paths import state_path
 
 try:
     import websocket
@@ -103,7 +114,7 @@ class BrowserSession:
     """Owned Chromium session.  A process is never attached implicitly."""
 
     def __init__(self) -> None:
-        self._state_path = runtime_dir() / "bidi-session.json"
+        self._state_path = state_path()
         self.driver: subprocess.Popen[str] | None = None
         self.driver_pid = 0
         self.driver_port = 0
@@ -136,7 +147,7 @@ class BrowserSession:
         chromedriver = os.environ.get("PAGOUSE_CHROMEDRIVER") or shutil.which("chromedriver")
         chromium = os.environ.get("PAGOUSE_CHROMIUM") or shutil.which("chromium")
         if not chromedriver or not chromium:
-            raise NoSession("chromium and chromedriver are required")
+            raise WebDriverUnavailable("chromium and chromedriver are required")
         self.profile = Path(tempfile.mkdtemp(prefix="pagouse-chromium-"))
         port = _free_port()
         self.driver = subprocess.Popen(
@@ -176,7 +187,7 @@ class BrowserSession:
             capabilities = value.get("capabilities") or {}
             websocket_url = capabilities.get("webSocketUrl")
             if not websocket_url:
-                raise NoSession("ChromeDriver did not expose a WebDriver BiDi endpoint")
+                raise SessionStartFailed("ChromeDriver did not expose a WebDriver BiDi endpoint")
             self.session_id = str(value.get("sessionId") or response.get("sessionId") or "")
             self.debugger_address = str(
                 (capabilities.get("goog:chromeOptions") or {}).get("debuggerAddress") or ""
@@ -187,12 +198,17 @@ class BrowserSession:
             tree = self.client.command("browsingContext.getTree")
             self._contexts = [str(item["context"]) for item in tree.get("contexts", [])]
             return self.doctor()
-        except Exception:
+        except Exception as exc:
             self.stop()
-            raise
+            if isinstance(
+                exc, (NoSession, WebDriverError, WebDriverUnavailable, SessionStartFailed)
+            ):
+                raise
+            raise SessionStartFailed(str(exc)) from exc
 
     def stop(self) -> bool:
         was_active = self.active
+        profile = self.profile
         if self.client is not None:
             self.client.close()
         self.client = None
@@ -215,6 +231,8 @@ class BrowserSession:
         self.driver = None
         if self.profile is not None:
             shutil.rmtree(self.profile, ignore_errors=True)
+        if profile is not None:
+            self._kill_profile_processes(profile)
         self.profile = None
         self.debugger_address = ""
         self.session_id = ""
@@ -224,25 +242,62 @@ class BrowserSession:
         self._state_path.unlink(missing_ok=True)
         return was_active
 
+    @staticmethod
+    def _kill_profile_processes(profile: Path) -> None:
+        """Kill only Chromium processes using this exact temporary profile."""
+        marker = f"--user-data-dir={profile}"
+        pids: list[int] = []
+        for entry in Path("/proc").glob("[0-9]*"):
+            try:
+                command = b" ".join((entry / "cmdline").read_bytes().split(b"\0"))
+            except OSError:
+                continue
+            if marker.encode() in command:
+                with suppress(ValueError):
+                    pids.append(int(entry.name))
+        for pid in pids:
+            with suppress(OSError):
+                os.kill(pid, signal.SIGTERM)
+        deadline = time.monotonic() + 2
+        while pids and time.monotonic() < deadline:
+            alive = []
+            for pid in pids:
+                try:
+                    os.kill(pid, 0)
+                except OSError:
+                    continue
+                alive.append(pid)
+            if not alive:
+                return
+            pids = alive
+            time.sleep(0.05)
+        for pid in pids:
+            with suppress(OSError):
+                os.kill(pid, signal.SIGKILL)
+
     def _persist(self) -> None:
-        self._state_path.write_text(
-            json.dumps(
-                {
-                    "driver_pid": self.driver_pid,
-                    "driver_port": self.driver_port,
-                    "session_id": self.session_id,
-                    "websocket_url": self._websocket_url,
-                    "profile": str(self.profile) if self.profile else "",
-                    "debugger_address": self.debugger_address,
-                    "refs": self._refs,
-                }
-            ),
-            encoding="utf-8",
-        )
+        payload = {
+            "schema": 1,
+            "driver_pid": self.driver_pid,
+            "driver_port": self.driver_port,
+            "session_id": self.session_id,
+            "websocket_url": self._websocket_url,
+            "profile": str(self.profile) if self.profile else "",
+            "debugger_address": self.debugger_address,
+            "refs": self._refs,
+            "updated_at": time.time(),
+        }
+        temporary = self._state_path.with_suffix(".tmp")
+        temporary.write_text(json.dumps(payload), encoding="utf-8")
+        os.chmod(temporary, 0o600)
+        os.replace(temporary, self._state_path)
 
     def _restore(self) -> None:
+        self.client = None
         try:
             state = json.loads(self._state_path.read_text(encoding="utf-8"))
+            if state.get("schema") != 1:
+                raise StaleMetadata("unsupported managed browser metadata schema")
             self.driver_pid = int(state["driver_pid"])
             self.driver_port = int(state["driver_port"])
             self.session_id = str(state["session_id"])
@@ -255,8 +310,25 @@ class BrowserSession:
                 self._contexts = [str(item["context"]) for item in self.contexts()]
             else:
                 self._state_path.unlink(missing_ok=True)
-        except (OSError, KeyError, TypeError, ValueError, IpcFailed):
+        except (OSError, KeyError, TypeError, ValueError, IpcFailed, StaleMetadata) as exc:
+            self.client = None
             self._state_path.unlink(missing_ok=True)
+            if isinstance(exc, IpcFailed):
+                self._recovery_error = SessionRecoveryFailed(str(exc))
+
+    def reload(self) -> None:
+        """Reload owner metadata after another process starts the service."""
+        self.client = None
+        self.driver = None
+        self.driver_pid = 0
+        self.driver_port = 0
+        self.session_id = ""
+        self.profile = None
+        self.debugger_address = ""
+        self._websocket_url = ""
+        self._contexts = []
+        self._refs = {}
+        self._restore()
 
     def _pid_alive(self) -> bool:
         if not self.driver_pid:
@@ -403,7 +475,7 @@ class BrowserSession:
 
     def navigate(self, context: str, url: str) -> dict[str, Any]:
         if context not in self._contexts:
-            raise NoTab(None)
+            raise ContextNotFound(context)
         return self._require().command(
             "browsingContext.navigate", {"context": context, "url": url, "wait": "complete"}
         )

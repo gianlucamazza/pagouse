@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
+import subprocess
 import sys
+import time
 from typing import Any, Never
 
 from pagouse import __version__
@@ -53,7 +56,25 @@ def cmd_doctor(args: argparse.Namespace) -> int:
 def cmd_browser_start(args: argparse.Namespace) -> int:
     from pagouse.bidi import session
 
-    data = session().start(headless=not args.headed)
+    systemctl = shutil.which("systemctl")
+    if not systemctl:
+        raise PagouseError(
+            "webdriver_unavailable", "systemctl is required for the browser supervisor"
+        )
+    unit = "pagouse-browser-headed.service" if args.headed else "pagouse-browser.service"
+    try:
+        subprocess.run([systemctl, "--user", "start", unit], check=True, timeout=15)
+    except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
+        raise PagouseError("session_start_failed", f"could not start {unit}: {exc}") from exc
+    deadline = time.monotonic() + 15
+    while time.monotonic() < deadline:
+        session().reload()
+        if session().active:
+            data = session().doctor()
+            break
+        time.sleep(0.2)
+    else:
+        raise PagouseError("session_start_failed", "browser supervisor did not become ready")
     return _print(
         _envelope(ok=True, action="browser_start", data=data),
         as_json=args.json,
@@ -64,7 +85,15 @@ def cmd_browser_start(args: argparse.Namespace) -> int:
 def cmd_browser_stop(args: argparse.Namespace) -> int:
     from pagouse.bidi import session
 
-    stopped = session().stop()
+    systemctl = shutil.which("systemctl")
+    if not systemctl:
+        raise PagouseError(
+            "webdriver_unavailable", "systemctl is required for the browser supervisor"
+        )
+    stopped = session().active
+    for unit in ("pagouse-browser.service", "pagouse-browser-headed.service"):
+        subprocess.run([systemctl, "--user", "stop", unit], check=False, timeout=15)
+    session().reload()
     return _print(
         _envelope(ok=True, action="browser_stop", data={"stopped": stopped}),
         as_json=args.json,

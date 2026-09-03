@@ -5,6 +5,7 @@ from __future__ import annotations
 __all__ = [
     "BadArg",
     "BadConfig",
+    "ContextNotFound",
     "Denied",
     "IpcFailed",
     "NoSession",
@@ -13,10 +14,14 @@ __all__ = [
     "PagouseError",
     "Readonly",
     "RestrictedPage",
+    "SessionRecoveryFailed",
+    "SessionStartFailed",
+    "StaleMetadata",
     "StaleRef",
     "Unsupported",
     "WaitTimeout",
     "WebDriverError",
+    "WebDriverUnavailable",
 ]
 
 
@@ -95,3 +100,28 @@ class Unsupported(PagouseError):
 class WebDriverError(PagouseError):
     def __init__(self, detail: str) -> None:
         super().__init__("webdriver_error", detail)
+
+
+class WebDriverUnavailable(PagouseError):
+    def __init__(self, detail: str) -> None:
+        super().__init__("webdriver_unavailable", detail)
+
+
+class SessionStartFailed(PagouseError):
+    def __init__(self, detail: str) -> None:
+        super().__init__("session_start_failed", detail)
+
+
+class SessionRecoveryFailed(PagouseError):
+    def __init__(self, detail: str) -> None:
+        super().__init__("session_recovery_failed", detail)
+
+
+class StaleMetadata(PagouseError):
+    def __init__(self, detail: str = "managed browser metadata is stale") -> None:
+        super().__init__("stale_metadata", detail)
+
+
+class ContextNotFound(PagouseError):
+    def __init__(self, context: str) -> None:
+        super().__init__("context_not_found", f"context {context} not found")

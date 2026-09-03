@@ -23,6 +23,7 @@ mcp = ["mcp>=2.0,<3.0"]
 [project.scripts]
 pagouse = "pagouse.hosts.cli:main"
 pagouse-mcp = "pagouse.hosts.mcp:main"
+pagouse-browserd = "pagouse.browserd:main"
 
 [project.urls]
 Homepage = "https://github.com/gianlucamazza/pagouse"

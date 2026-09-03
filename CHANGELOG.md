@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.1] — 2026-09-04
+
+- Added a persistent `systemd --user` browser supervisor and headed variant.
+- Made session metadata atomic and added deterministic runtime cleanup.
+- Added lifecycle diagnostics for unavailable, stale, and failed sessions.
+- Corrected PNG screenshot dimensions when BiDi omits viewport metadata.
+- Removed the obsolete OpenCode skill link and orphan AX fixture.
+
 ## [0.5.0] — 2026-09-03
 
 - Added an owned, isolated Chromium session using WebDriver BiDi.

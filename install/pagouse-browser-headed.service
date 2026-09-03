@@ -1,0 +1,14 @@
+[Unit]
+Description=Pagouse isolated headed Chromium WebDriver BiDi session
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/pagouse-browserd --headed
+Restart=on-failure
+RestartSec=2
+KillMode=control-group
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=default.target

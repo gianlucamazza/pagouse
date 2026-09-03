@@ -19,6 +19,14 @@ mkdir -p "$BIN" "$CFG_DIR"
 
 uv tool install --force --reinstall "${REPO}[mcp]"
 
+SYSTEMD_USER_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
+mkdir -p "$SYSTEMD_USER_DIR"
+install -m 0644 "$REPO/install/pagouse-browser.service" "$SYSTEMD_USER_DIR/pagouse-browser.service"
+install -m 0644 "$REPO/install/pagouse-browser-headed.service" "$SYSTEMD_USER_DIR/pagouse-browser-headed.service"
+if command -v systemctl >/dev/null 2>&1 && systemctl --user is-system-running >/dev/null 2>&1; then
+	systemctl --user daemon-reload
+fi
+
 if [[ ! -f "$CFG_DIR/config.toml" ]]; then
 	umask 077
 	cp "$REPO/examples/config.toml" "$CFG_DIR/config.toml"
@@ -36,8 +44,7 @@ link_skill() {
 for root in \
 	"${HOME}/.claude/skills" \
 	"${HOME}/.grok/skills" \
-	"${HOME}/.agents/skills" \
-	"${HOME}/.config/opencode/skills"; do
+	"${HOME}/.agents/skills"; do
 	[[ -d "$root" ]] || continue
 	link_skill "$root/pagouse"
 done

@@ -6,6 +6,7 @@ import base64
 import contextlib
 import re
 import shutil
+import struct
 import subprocess
 import time
 from pathlib import Path
@@ -72,7 +73,16 @@ def save_data_url(
     dest_dir = runtime_dir()
     _gc_old_shots(dest_dir)
     dest = dest_dir / f"shot-{time.time_ns()}.{ext}"
-    dest.write_bytes(base64.b64decode(blob))
+    decoded = base64.b64decode(blob)
+    dest.write_bytes(decoded)
+    if (
+        width <= 0
+        and height <= 0
+        and kind == "png"
+        and decoded[:8] == b"\x89PNG\r\n\x1a\n"
+        and len(decoded) >= 24
+    ):
+        width, height = struct.unpack(">II", decoded[16:24])
     with contextlib.suppress(OSError):
         dest.chmod(0o600)
     scale, out_w, out_h, fit_skipped = apply_fit(dest, width, height, 1.0, fit)

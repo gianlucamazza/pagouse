@@ -15,16 +15,17 @@ hosts/cli.py  hosts/mcp.py  skills/
         |
 contract.py  (schema 2)
         |
-BrowserSession / BiDiClient
+BrowserSession / BiDiClient / browserd
         |                    \
 WebDriver BiDi              CDP AX adapter
         |
 owned Chromium + isolated user-data-dir
 ```
 
-The session is persisted only as local owner-readable metadata so separate CLI
-invocations can use the same managed browser. The browser profile is temporary
-and is deleted on `browser_stop`.
+The persistent `pagouse-browserd` owner is launched on demand by a
+`systemd --user` unit. Session metadata is atomic and owner-readable so
+separate CLI invocations can reconnect to the same managed browser. The browser
+profile is temporary and is deleted on `browser_stop`.
 
 ## Safety boundaries
 

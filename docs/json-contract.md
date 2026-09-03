@@ -77,6 +77,11 @@ could not be read; the rest of the tree is still valid.
 | `bad_config` | 2 | `config.toml` unreadable, or a key of the wrong shape |
 | `unsupported` | 1 | requested WebDriver capability is unavailable |
 | `webdriver_error` | 1 | Chromium or ChromeDriver rejected a BiDi command |
+| `webdriver_unavailable` | 1 | required browser supervisor or executable is unavailable |
+| `session_start_failed` | 1 | the isolated browser session did not become ready |
+| `session_recovery_failed` | 1 | an existing session could not be reconnected |
+| `stale_metadata` | 1 | persisted browser metadata is invalid or obsolete |
+| `context_not_found` | 1 | the requested browsing context is no longer present |
 | `usage` | 2 | argparse; JSON envelope when `--json`, otherwise help on stderr |
 
 ## Rules
