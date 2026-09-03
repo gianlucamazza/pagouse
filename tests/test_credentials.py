@@ -6,7 +6,12 @@ from pathlib import Path
 import pytest
 
 from pagouse.credentials import load_credentials, resolve
-from pagouse.errors import BadConfig, CredentialFieldInvalid, CredentialNotFound
+from pagouse.errors import (
+    BadConfig,
+    CredentialFieldInvalid,
+    CredentialNotFound,
+    SecretResolutionFailed,
+)
 
 
 def _write(path: Path, text: str, mode: int = 0o600) -> None:
@@ -67,3 +72,28 @@ def test_resolve_uses_op_without_exposing_value_in_arguments(
     assert resolve("demo", "password", path) == "not-in-argv"
     assert "not-in-argv" not in " ".join(seen[0])
     assert seen[0] == ["/usr/bin/op", "read", "--no-newline", "op://v/i/password"]
+
+
+def test_invalid_provider_output_is_redacted(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = tmp_path / "credentials.toml"
+    _write(
+        path, '[credentials.demo]\norigin = "https://example.com"\npassword = "op://v/i/password"\n'
+    )
+    monkeypatch.setattr("pagouse.credentials.shutil.which", lambda _: "/usr/bin/op")
+    monkeypatch.setattr(
+        "pagouse.credentials.subprocess.run",
+        lambda *args, **kwargs: subprocess.CompletedProcess(args, 0, stdout=b"\xff", stderr=b""),
+    )
+    with pytest.raises(SecretResolutionFailed, match="invalid text"):
+        resolve("demo", "password", path)
+
+
+def test_origin_is_required_and_canonicalized(tmp_path: Path) -> None:
+    path = tmp_path / "credentials.toml"
+    _write(
+        path,
+        '[credentials.demo]\norigin = "https://Example.com:443/"\npassword = "op://v/i/password"\n',
+    )
+    assert load_credentials(path)["demo"].origin == "https://example.com"

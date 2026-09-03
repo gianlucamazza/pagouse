@@ -12,7 +12,9 @@ allow_origins = []
 deny_origins = []
 ```
 
-Optional credential handles use a separate owner-only file at
+Optional credential handles use the template in
+[`examples/credentials.toml`](../examples/credentials.toml), copied to a
+separate owner-only file at
 `~/.config/pagouse/credentials.toml`. It contains only 1Password secret
 references, never resolved values:
 

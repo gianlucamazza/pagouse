@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.6.1] — 2026-09-04
+
+- Hardened credential origin canonicalization and provider-output handling.
+- Added a safe `examples/credentials.toml` registry template.
+
 ## [0.6.0] — 2026-09-04
 
 - Added allowlisted 1Password CLI credential filling through `op read`.

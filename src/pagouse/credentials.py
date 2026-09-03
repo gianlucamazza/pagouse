@@ -53,9 +53,26 @@ def _origin(value: object, *, key: str) -> str:
     if not isinstance(value, str):
         raise BadConfig(f"credentials.{key} must be an http(s) origin")
     parsed = urlparse(value)
-    if parsed.scheme not in {"http", "https"} or not parsed.netloc or parsed.path not in {"", "/"}:
+    if (
+        parsed.scheme not in {"http", "https"}
+        or not parsed.hostname
+        or parsed.username is not None
+        or parsed.password is not None
+        or parsed.path not in {"", "/"}
+        or parsed.params
+        or parsed.query
+        or parsed.fragment
+    ):
         raise BadConfig(f"credentials.{key} must be an http(s) origin")
-    return f"{parsed.scheme}://{parsed.netloc}".lower()
+    try:
+        port = parsed.port
+    except ValueError as exc:
+        raise BadConfig(f"credentials.{key} must be an http(s) origin") from exc
+    default_port = (parsed.scheme == "http" and port == 80) or (
+        parsed.scheme == "https" and port == 443
+    )
+    suffix = "" if port is None or default_port else f":{port}"
+    return f"{parsed.scheme}://{parsed.hostname}{suffix}".lower()
 
 
 def load_credentials(path: Path | None = None) -> dict[str, Credential]:
@@ -121,7 +138,10 @@ def resolve(handle: str, field: str, path: Path | None = None) -> str:
         raise SecretResolutionFailed("1Password CLI could not resolve the reference") from exc
     except subprocess.CalledProcessError as exc:
         raise SecretResolutionFailed("1Password CLI rejected the secret reference") from exc
-    value = result.stdout.decode("utf-8", errors="strict")
+    try:
+        value = result.stdout.decode("utf-8", errors="strict")
+    except UnicodeDecodeError as exc:
+        raise SecretResolutionFailed("1Password returned an invalid text value") from exc
     if not value:
         raise SecretResolutionFailed("1Password returned an empty value")
     return value
