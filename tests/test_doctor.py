@@ -7,8 +7,8 @@ from pagouse.hosts.cli import main
 def test_doctor_without_daemon_is_not_ready() -> None:
     report = run_doctor()
     assert report["ready"] is False
-    assert "daemon" in report["blockers"]
-    assert report["session"]["extension"] is False
+    assert "webdriver_bidi" in report["blockers"]
+    assert report["session"]["active"] is False
 
 
 def test_json_doctor_envelope(capsys: object) -> None:
@@ -20,4 +20,4 @@ def test_json_doctor_envelope(capsys: object) -> None:
     assert payload["ok"] is True
     assert payload["action"] == "doctor"
     assert payload["ready"] is False
-    assert payload["schema"] == 1
+    assert payload["schema"] == 2

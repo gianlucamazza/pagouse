@@ -1,4 +1,4 @@
-"""Page snapshots. The extension maps tabs and AX nodes into these types."""
+"""Page-agent data models."""
 
 from __future__ import annotations
 

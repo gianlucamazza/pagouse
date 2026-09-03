@@ -6,7 +6,7 @@ from typing import Any
 
 __all__ = ["DEFAULT_FIT", "SCHEMA", "envelope"]
 
-SCHEMA = 1
+SCHEMA = 2
 DEFAULT_FIT = 1568
 
 

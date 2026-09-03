@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.5.0] — 2026-09-03
+
+- Added an owned, isolated Chromium session using WebDriver BiDi.
+- Added browser lifecycle and browsing-context commands.
+- Added a narrow CDP boundary for browser-computed accessibility data.
+
 ## [0.4.0] — 2026-08-22
 
 ### Added

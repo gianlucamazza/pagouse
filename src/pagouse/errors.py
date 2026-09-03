@@ -14,7 +14,9 @@ __all__ = [
     "Readonly",
     "RestrictedPage",
     "StaleRef",
+    "Unsupported",
     "WaitTimeout",
+    "WebDriverError",
 ]
 
 
@@ -26,7 +28,7 @@ class PagouseError(Exception):
 
 
 class NoSession(PagouseError):
-    def __init__(self, message: str = "extension or daemon not connected") -> None:
+    def __init__(self, message: str = "managed browser session is not connected") -> None:
         super().__init__("no_session", message)
 
 
@@ -83,3 +85,13 @@ class BadArg(PagouseError):
 class WaitTimeout(PagouseError):
     def __init__(self, detail: str = "wait timed out") -> None:
         super().__init__("wait_timeout", detail)
+
+
+class Unsupported(PagouseError):
+    def __init__(self, detail: str) -> None:
+        super().__init__("unsupported", detail)
+
+
+class WebDriverError(PagouseError):
+    def __init__(self, detail: str) -> None:
+        super().__init__("webdriver_error", detail)

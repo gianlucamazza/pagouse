@@ -50,6 +50,53 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     return _print(payload, as_json=args.json, human="\n".join(lines) + "\n")
 
 
+def cmd_browser_start(args: argparse.Namespace) -> int:
+    from pagouse.bidi import session
+
+    data = session().start(headless=not args.headed)
+    return _print(
+        _envelope(ok=True, action="browser_start", data=data),
+        as_json=args.json,
+        human=f"browser active={data['active']} contexts={data['contexts']}\n",
+    )
+
+
+def cmd_browser_stop(args: argparse.Namespace) -> int:
+    from pagouse.bidi import session
+
+    stopped = session().stop()
+    return _print(
+        _envelope(ok=True, action="browser_stop", data={"stopped": stopped}),
+        as_json=args.json,
+        human=f"browser stopped={stopped}\n",
+    )
+
+
+def cmd_browser_doctor(args: argparse.Namespace) -> int:
+    from pagouse.bidi import session
+
+    data = session().doctor()
+    return _print(
+        _envelope(ok=True, action="browser_doctor", data=data),
+        as_json=args.json,
+        human=(
+            f"active={data['active']} contexts={data['contexts']} "
+            f"isolated={data['profile_isolated']}\n"
+        ),
+    )
+
+
+def cmd_contexts(args: argparse.Namespace) -> int:
+    from pagouse.bidi import session
+
+    data = {"contexts": session().contexts()}
+    return _print(
+        _envelope(ok=True, action="contexts", data=data),
+        as_json=args.json,
+        human=f"contexts={len(data['contexts'])}\n",
+    )
+
+
 def cmd_tabs(args: argparse.Namespace) -> int:
     from pagouse.observe import tabs
 
@@ -92,20 +139,12 @@ def cmd_wait(args: argparse.Namespace) -> int:
     )
 
 
-def cmd_wait_ref(args: argparse.Namespace) -> int:
-    from pagouse.observe import wait_ref
+def cmd_wait_event(args: argparse.Namespace) -> int:
+    from pagouse.observe import wait_event
 
-    data = wait_ref(
-        args.tab,
-        ref=args.ref,
-        timeout_ms=args.timeout,
-    )
-    payload = _envelope(ok=True, action="wait_ref", data=data)
-    return _print(
-        payload,
-        as_json=args.json,
-        human=f"matched={data.get('matched')} tab={data.get('tab_id')} ref={args.ref}\n",
-    )
+    data = wait_event(args.event, args.tab, timeout_ms=args.timeout)
+    payload = _envelope(ok=True, action="wait_event", data=data)
+    return _print(payload, as_json=args.json, human=f"event {data['event']}\n")
 
 
 def cmd_shot(args: argparse.Namespace) -> int:
@@ -222,16 +261,6 @@ def cmd_tab_focus(args: argparse.Namespace) -> int:
     return _print(payload, as_json=args.json, human=f"focus {data.get('tab_id')}\n")
 
 
-def cmd_daemon(args: argparse.Namespace) -> int:
-    from pagouse.daemon import listen, stop
-
-    if args.stop:
-        stopped = stop()
-        payload = _envelope(ok=True, action="daemon", data={"stopped": stopped, "daemon": False})
-        return _print(payload, as_json=args.json, human="daemon stopped\n")
-    return listen()
-
-
 class _Parser(argparse.ArgumentParser):
     json_mode = False
 
@@ -259,13 +288,27 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--version", action="version", version=f"pagouse {__version__}")
     sub = p.add_subparsers(dest="cmd", required=True)
 
-    sub.add_parser("doctor", help="extension, native host, and daemon readiness").set_defaults(
-        func=cmd_doctor
+    sub.add_parser("doctor", help="managed WebDriver BiDi readiness").set_defaults(func=cmd_doctor)
+    browser_start = sub.add_parser(
+        "browser_start", help="start an isolated Chromium session via WebDriver BiDi"
+    )
+    browser_start.add_argument(
+        "--headed", action="store_true", help="show the managed browser window"
+    )
+    browser_start.set_defaults(func=cmd_browser_start)
+    sub.add_parser("browser_stop", help="stop the managed Chromium session").set_defaults(
+        func=cmd_browser_stop
+    )
+    sub.add_parser("browser_doctor", help="inspect the managed BiDi session").set_defaults(
+        func=cmd_browser_doctor
+    )
+    sub.add_parser("contexts", help="list managed browsing contexts").set_defaults(
+        func=cmd_contexts
     )
     sub.add_parser("tabs", help="list http(s) tabs").set_defaults(func=cmd_tabs)
 
     snap = sub.add_parser("snapshot", help="accessibility tree with ref_N labels")
-    snap.add_argument("--tab", type=int, metavar="ID", help="tab id from tabs")
+    snap.add_argument("--tab", metavar="ID", help="context id from tabs")
     snap.add_argument(
         "--filter",
         choices=("interactive", "all"),
@@ -277,7 +320,7 @@ def build_parser() -> argparse.ArgumentParser:
     snap.set_defaults(func=cmd_snapshot)
 
     shot = sub.add_parser("shot", help="capture the tab viewport")
-    shot.add_argument("--tab", type=int, metavar="ID", help="tab id from tabs")
+    shot.add_argument("--tab", metavar="ID", help="context id from tabs")
     shot.add_argument(
         "--fit",
         type=int,
@@ -288,7 +331,7 @@ def build_parser() -> argparse.ArgumentParser:
     shot.set_defaults(func=cmd_shot)
 
     waiting = sub.add_parser("wait", help="poll until a URL substring or ref appears")
-    waiting.add_argument("--tab", type=int, metavar="ID")
+    waiting.add_argument("--tab", metavar="ID")
     waiting.add_argument("--url-contains", dest="url_contains", help="substring of the tab URL")
     waiting.add_argument("--ref", help="ref_N from snapshot")
     waiting.add_argument(
@@ -300,20 +343,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     waiting.set_defaults(func=cmd_wait)
 
-    waiting_ref = sub.add_parser(
-        "wait_ref",
-        help="poll extension for a ref (lightweight, no AX walk)",
-    )
-    waiting_ref.add_argument("--tab", type=int, metavar="ID")
-    waiting_ref.add_argument("--ref", required=True, help="ref_N from snapshot")
-    waiting_ref.add_argument(
-        "--timeout",
-        type=int,
-        default=5000,
-        metavar="MS",
-        help="milliseconds (default 5000)",
-    )
-    waiting_ref.set_defaults(func=cmd_wait_ref)
+    event_wait = sub.add_parser("wait_event", help="wait for a WebDriver BiDi event")
+    event_wait.add_argument("event", help="BiDi event name")
+    event_wait.add_argument("--tab", metavar="ID")
+    event_wait.add_argument("--timeout", type=int, default=5000, metavar="MS")
+    event_wait.set_defaults(func=cmd_wait_event)
 
     then: dict[str, Any] = {
         "default": "none",
@@ -323,7 +357,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     sc = sub.add_parser("scroll", help="scroll a snapshot ref into view")
     sc.add_argument("--ref", required=True, help="ref_N from snapshot")
-    sc.add_argument("--tab", type=int, metavar="ID")
+    sc.add_argument("--tab", metavar="ID")
     sc.add_argument("--then", **then)
     sc.add_argument(
         "--delay",
@@ -336,7 +370,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     click = sub.add_parser("click", help="click the element for a snapshot ref")
     click.add_argument("--ref", required=True, help="ref_N from snapshot")
-    click.add_argument("--tab", type=int, metavar="ID")
+    click.add_argument("--tab", metavar="ID")
     click.add_argument("--then", **then)
     click.add_argument(
         "--delay",
@@ -350,7 +384,7 @@ def build_parser() -> argparse.ArgumentParser:
     fill = sub.add_parser("fill", help="set a form control and fire input/change")
     fill.add_argument("--ref", required=True, help="ref_N from snapshot")
     fill.add_argument("--value", required=True)
-    fill.add_argument("--tab", type=int, metavar="ID")
+    fill.add_argument("--tab", metavar="ID")
     fill.add_argument("--then", **then)
     fill.add_argument(
         "--delay",
@@ -363,7 +397,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     typ = sub.add_parser("type", help="type into the focused element of the tab")
     typ.add_argument("text")
-    typ.add_argument("--tab", type=int, metavar="ID")
+    typ.add_argument("--tab", metavar="ID")
     typ.add_argument("--then", **then)
     typ.add_argument(
         "--delay",
@@ -376,7 +410,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     key = sub.add_parser("key", help="press a combo such as Enter or ctrl+a")
     key.add_argument("combo")
-    key.add_argument("--tab", type=int, metavar="ID")
+    key.add_argument("--tab", metavar="ID")
     key.add_argument("--then", **then)
     key.add_argument(
         "--delay",
@@ -389,7 +423,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     nav = sub.add_parser("navigate", help="go to a URL, or back/forward")
     nav.add_argument("url")
-    nav.add_argument("--tab", type=int, metavar="ID")
+    nav.add_argument("--tab", metavar="ID")
     nav.add_argument("--then", **then)
     nav.add_argument(
         "--delay",
@@ -413,12 +447,9 @@ def build_parser() -> argparse.ArgumentParser:
     opened.set_defaults(func=cmd_tab_open)
 
     focus = sub.add_parser("tab_focus", help="activate a tab by id")
-    focus.add_argument("--tab", type=int, required=True, metavar="ID")
+    focus.add_argument("--tab", required=True, metavar="ID")
     focus.set_defaults(func=cmd_tab_focus)
 
-    daemon = sub.add_parser("daemon", help="run or stop the local router")
-    daemon.add_argument("--stop", action="store_true", help="tear the daemon down")
-    daemon.set_defaults(func=cmd_daemon)
     return p
 
 

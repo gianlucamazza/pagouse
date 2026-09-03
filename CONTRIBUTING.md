@@ -1,7 +1,7 @@
 # Contributing
 
-Thanks for looking. pagouse is small on purpose — a stdlib-only core, one
-Chromium extension, and two thin hosts — so most changes are small too.
+Thanks for looking. pagouse is a small Chromium page agent with a focused
+WebDriver BiDi runtime and two thin hosts.
 
 ## Dev loop
 
@@ -17,8 +17,8 @@ uv run ty check src
 uv run pagouse --json doctor
 ```
 
-`./install.sh` deploys the checkout as a `uv` tool, registers the
-native-messaging host, and links the agent skill. It is idempotent.
+`./install.sh` deploys the checkout as a `uv` tool and links the agent skill.
+It does not modify Chromium profiles or install an extension.
 
 ## Tests
 
@@ -40,9 +40,7 @@ Two groups deserve a note:
 
 - `src/pagouse/hosts/` — CLI and MCP. Thin. They format envelopes; they do
   not contain logic.
-- `src/pagouse/` — the page-agent core. Zero third-party dependencies.
-- `extension/` — vanilla MV3. No bundler, no npm in v0.
-- `src/pagouse/daemon.py` / `nm_relay.py` — local IPC only.
+- `src/pagouse/` — the page-agent core and protocol adapters.
 
 Do not add mutate tools to the MCP extra. MCP is observe-only, by design.
 Do not add `chrome.debugger` in v0.

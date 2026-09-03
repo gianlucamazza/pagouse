@@ -5,9 +5,9 @@
 [![Python 3.13+](https://img.shields.io/badge/python-3.13%2B-blue.svg)](pyproject.toml)
 
 **By ref, not by pixel.** pagouse is a page agent for coding agents: a
-Chromium extension on the daily profile that reads the accessibility tree,
-hands your agent stable `ref_N` labels, and — only with a grant — clicks,
-fills, and navigates those nodes.
+Chromium page agent that owns an isolated browser session, reads the
+browser-computed accessibility tree, and — only with a grant — interacts with
+the page through WebDriver BiDi.
 
 It observes by default. Mutation needs `--allow-input`. The optional MCP
 server is observe-only and cannot be talked into typing.
@@ -21,12 +21,11 @@ RootWebArea "Inbox" [ref_1]
 
 ## How it works
 
-- The MV3 extension builds the accessibility tree **inside the page**, where
-  the refs stay valid across separate CLI invocations.
-- Native messaging starts `pagoused`, a local daemon on an owner-only unix
-  socket. No remote-debugging port, no `chrome.debugger`.
-- A zero-dependency Python core wraps it all in a versioned `--json`
-  envelope (`schema: 1`).
+- `browser_start` starts Chromium with a temporary, owner-only profile and
+  persists only local session metadata.
+- WebDriver BiDi handles lifecycle, navigation, contexts and trusted input;
+  CDP is restricted to the browser-computed accessibility tree.
+- A versioned `--json` envelope (`schema: 2`) is shared by CLI and MCP.
 
 The layers and the non-goals: [docs/architecture.md](docs/architecture.md).
 
@@ -34,8 +33,7 @@ The layers and the non-goals: [docs/architecture.md](docs/architecture.md).
 
 - Linux
 - Python 3.13+ and [`uv`](https://docs.astral.sh/uv/)
-- A Chromium-family browser (Chrome, Chromium, Brave, Edge) on the **daily
-  profile**
+- Chromium and a matching ChromeDriver on the host
 
 The core itself has **zero** dependencies. `magick` is optional for `--fit`
 downscaling.
@@ -48,13 +46,8 @@ cd pagouse
 ./install.sh
 ```
 
-`install.sh` installs pagouse as a `uv` tool, writes
-`~/.config/pagouse/config.toml` if missing, links the agent skill into any
-existing skill root, and registers the native-messaging host. It is
-idempotent. Details in [docs/quickstart.md](docs/quickstart.md).
-
-Then load `extension/` unpacked (`chrome://extensions` → Developer mode).
-`pagouse --json doctor` should report `ready` once the popup is green.
+`install.sh` installs pagouse as a `uv` tool, writes the optional config if
+missing, and links the agent skill. Then run `pagouse browser_start`.
 
 ## Usage
 
@@ -76,9 +69,8 @@ envelope and error codes: [docs/json-contract.md](docs/json-contract.md).
 
 ## MCP extra and agent skill
 
-`uv tool install 'pagouse[mcp]'` provides `pagouse-mcp`: read-only
-observation tools only (`doctor`, `tabs`, `snapshot`, `shot`, `wait`, `wait_ref`).
-There is no mutate tool; drive the page through the CLI and a grant.
+`uv tool install 'pagouse[mcp]'` provides `pagouse-mcp`: read-only observation
+tools only. There is no mutate tool; drive the page through the CLI and a grant.
 
 `install.sh` also links `skills/pagouse/SKILL.md` into any existing agent
 skill root, so your agents get the playbook without setup.
@@ -95,7 +87,7 @@ input. Report vulnerabilities per [SECURITY.md](SECURITY.md).
 
 | Page | For |
 |------|-----|
-| [docs/quickstart.md](docs/quickstart.md) | Install, load the extension, first commands |
+| [docs/quickstart.md](docs/quickstart.md) | Install, start the managed browser, first commands |
 | [docs/cli-reference.md](docs/cli-reference.md) | Every command and flag, and the MCP surface |
 | [docs/json-contract.md](docs/json-contract.md) | The `--json` envelope, per-action keys, error codes. **Authoritative** |
 | [docs/configuration.md](docs/configuration.md) | `config.toml` keys and every environment variable |

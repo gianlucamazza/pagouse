@@ -1,31 +1,24 @@
 # Quickstart
 
-Prerequisites: **Linux**, Python 3.13+, [`uv`](https://docs.astral.sh/uv/),
-and a Chromium-family browser (Chrome, Chromium, Brave, Edge) on your daily
-profile.
+Install the package with `./install.sh`. The installer does not touch an
+existing Chromium profile or install an extension.
+
+Start an isolated browser:
 
 ```bash
-git clone https://github.com/gianlucamazza/pagouse
-cd pagouse
-./install.sh
-pagouse --json doctor
+pagouse --json browser_start
+pagouse --json browser_doctor
+pagouse --json contexts
 ```
 
-`install.sh` installs the uv tool, writes `~/.config/pagouse/config.toml` if
-missing, links the skill into any existing agent skill root, and registers the
-native-messaging host.
+Use the returned context id with `tabs`, `snapshot`, `navigate`, and the input
+commands. Observation is read-only; mutation requires `--allow-input`.
 
-Then in Chromium: `chrome://extensions` → Developer mode → **Load unpacked** →
-the **folder** `extension/` (not `manifest.json`). On the pagouse card, Site
-access → **On all sites** (needed for `shot`). The popup is green when the
-daemon is up. Tabs pagouse drives appear in the green **jarvis** tab group,
-not Claude's.
+Stop the owned browser when finished:
 
 ```bash
-pagouse --json tabs
-pagouse --json snapshot --tab ID
-pagouse --json --allow-input fill --ref ref_3 --value "user@example.com" --tab ID
-pagouse --json --allow-input click --ref ref_4 --tab ID --then snapshot
+pagouse --json browser_stop
 ```
 
-This tool does not drive the compositor or native windows.
+Set `PAGOUSE_CHROMIUM` or `PAGOUSE_CHROMEDRIVER` when binaries are not found
+on `PATH`. The managed profile is temporary and is removed on stop.

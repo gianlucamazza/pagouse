@@ -1,56 +1,68 @@
-"""Read-only page operations. Need a live extension; doctor does not."""
+"""Read-only operations on the managed WebDriver BiDi browser."""
 
 from __future__ import annotations
 
 import time
 from typing import Any
 
+from pagouse.bidi import session
+from pagouse.cdp import accessibility_tree, normalize
 from pagouse.contract import DEFAULT_FIT
-from pagouse.errors import BadArg, WaitTimeout
-from pagouse.session import call
+from pagouse.errors import BadArg, NoSession, WaitTimeout
 from pagouse.shot import save_data_url
 
 
 def tabs() -> dict[str, Any]:
-    reply = call("tabs")
-    return {"tabs": reply.get("tabs") or [], "active": reply.get("active")}
+    contexts = session().contexts()
+    rows = [
+        {
+            "id": item.get("context"),
+            "url": item.get("url") or "",
+            "title": "",
+            "active": index == 0,
+            "origin": "",
+            "scriptable": True,
+        }
+        for index, item in enumerate(contexts)
+    ]
+    return {"tabs": rows, "active": rows[0]["id"] if rows else None}
 
 
 def snapshot(
-    tab_id: int | None = None,
+    tab_id: str | None = None,
     *,
     filter: str = "interactive",
     depth: int = 15,
     max_chars: int = 50000,
 ) -> dict[str, Any]:
-    reply = call(
-        "snapshot",
-        tab_id=tab_id,
-        filter=filter,
-        depth=depth,
-        max_chars=max_chars,
-    )
+    current = str(tab_id) if tab_id is not None else session().current_context()
+    contexts = session().contexts()
+    row = next((item for item in contexts if item.get("context") == current), None)
+    if row is None:
+        raise NoSession(f"context {current} not found")
+    if not session().debugger_address:
+        raise NoSession("Chromium did not expose a local CDP endpoint for AX")
+    tree, refs = normalize(accessibility_tree(session().debugger_address))
+    session().set_refs(refs)
     data = {
-        "tab_id": reply.get("tab_id"),
-        "url": reply.get("url"),
-        "title": reply.get("title"),
-        "tree": reply.get("tree") or "",
-        "refs": int(reply.get("refs") or 0),
-        "filter": reply.get("filter") or filter,
+        "tab_id": current,
+        "url": row.get("url") or "",
+        "title": "",
+        "tree": tree[:max_chars],
+        "refs": len(refs),
+        "filter": filter,
     }
-    if reply.get("frame_errors"):
-        data["frame_errors"] = reply["frame_errors"]
     return data
 
 
-def shot(tab_id: int | None = None, *, fit: int = DEFAULT_FIT) -> dict[str, Any]:
-    reply = call("shot", tab_id=tab_id)
-    data_url = str(reply.get("data_url") or "")
-    width = int(reply.get("width") or 0)
-    height = int(reply.get("height") or 0)
+def shot(tab_id: str | None = None, *, fit: int = DEFAULT_FIT) -> dict[str, Any]:
+    current = str(tab_id) if tab_id is not None else session().current_context()
+    reply = session()._require().command("browsingContext.captureScreenshot", {"context": current})
+    data_url = "data:image/png;base64," + str(reply.get("data") or "")
+    width = height = 0
     saved = save_data_url(data_url, width=width, height=height, fit=fit)
     result: dict[str, Any] = {
-        "tab_id": reply.get("tab_id"),
+        "tab_id": current,
         "path": saved["path"],
         "width": saved["width"],
         "height": saved["height"],
@@ -62,7 +74,7 @@ def shot(tab_id: int | None = None, *, fit: int = DEFAULT_FIT) -> dict[str, Any]
 
 
 def wait(
-    tab_id: int | None = None,
+    tab_id: str | None = None,
     *,
     url_contains: str | None = None,
     ref: str | None = None,
@@ -113,24 +125,15 @@ def wait(
     )
 
 
-def wait_ref(
-    tab_id: int | None = None,
+def wait_event(
+    event_name: str,
+    tab_id: str | None = None,
     *,
-    ref: str,
     timeout_ms: int = 5000,
 ) -> dict[str, Any]:
-    """Poll the extension for a ref using lightweight lookup (no full AX walk)."""
-    if timeout_ms <= 0:
-        raise BadArg("timeout_ms must be positive")
-    reply = call(
-        "wait_ref",
-        tab_id=tab_id,
-        ref=ref,
-        timeout_ms=timeout_ms,
-    )
-    return {
-        "tab_id": reply.get("tab_id"),
-        "ref": ref,
-        "matched": reply.get("matched", False),
-        "timeout_ms": timeout_ms,
-    }
+    """Wait for one subscribed WebDriver BiDi event."""
+    if not event_name.strip():
+        raise BadArg("event_name must not be empty")
+    context = str(tab_id) if tab_id is not None else None
+    event = session().wait_event(event_name, timeout_ms, context)
+    return {"event": event_name, "tab_id": context, "payload": event, "timeout_ms": timeout_ms}

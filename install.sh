@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Local install: uv tool + optional config + agent skill links + native host.
+# Local install: uv tool + optional config + agent skill links.
 # Idempotent. Does not register MCP and does not write host config.toml files.
 set -euo pipefail
 
@@ -42,8 +42,6 @@ for root in \
 	link_skill "$root/pagouse"
 done
 
-bash "$REPO/install/install-host.sh"
-
 echo
 echo "pagouse --json doctor"
-echo "Then load $REPO/extension as an unpacked Chromium extension."
+echo "Then run pagouse browser_start."

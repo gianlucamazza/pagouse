@@ -15,7 +15,7 @@ classifiers = [
   "Topic :: Internet :: WWW/HTTP :: Browsers",
 ]
 dynamic = ["version"]
-dependencies = []
+dependencies = ["websocket-client>=1.8,<2"]
 
 [project.optional-dependencies]
 mcp = ["mcp>=2.0,<3.0"]
@@ -23,8 +23,6 @@ mcp = ["mcp>=2.0,<3.0"]
 [project.scripts]
 pagouse = "pagouse.hosts.cli:main"
 pagouse-mcp = "pagouse.hosts.mcp:main"
-pagouse-nm = "pagouse.nm_relay:main"
-pagoused = "pagouse.daemon:main"
 
 [project.urls]
 Homepage = "https://github.com/gianlucamazza/pagouse"

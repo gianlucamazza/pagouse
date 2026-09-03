@@ -21,5 +21,5 @@ def test_json_usage_is_envelope(capsys: object) -> None:
     payload = json.loads(captured.out)
     assert payload["ok"] is False
     assert payload["error"] == "usage"
-    assert payload["schema"] == 1
+    assert payload["schema"] == 2
     assert payload["action"] == "usage"

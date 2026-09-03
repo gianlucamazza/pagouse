@@ -196,7 +196,7 @@ def test_doctor_keys_are_documented() -> None:
 
 def test_skill_mentions_the_gates() -> None:
     skill = (ROOT / "skills" / "pagouse" / "SKILL.md").read_text()
-    assert '"schema": 1' in skill
+    assert '"schema": 2' in skill
     assert "stale_ref" in skill
     assert "--allow-input" in skill
     assert 'error: "usage"' in skill

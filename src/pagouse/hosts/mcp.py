@@ -32,14 +32,14 @@ def main() -> int:
     from pagouse.observe import snapshot as take_snapshot
     from pagouse.observe import tabs as list_tabs
     from pagouse.observe import wait as wait_for
-    from pagouse.observe import wait_ref as wait_ref_for
+    from pagouse.observe import wait_event as wait_event_for
 
     server = MCPServer("pagouse")
     readonly = ToolAnnotations(read_only_hint=True)
 
     @server.tool(annotations=readonly)
     def doctor() -> dict:
-        """Extension, native host, and daemon readiness. Read-only."""
+        """Managed WebDriver BiDi readiness. Read-only."""
         return observe_call(
             "doctor",
             lambda: envelope(ok=True, action="doctor", data=run_doctor()),
@@ -55,7 +55,7 @@ def main() -> int:
 
     @server.tool(annotations=readonly)
     def snapshot(
-        tab_id: int | None = None,
+        tab_id: str | None = None,
         filter: str = "interactive",
         depth: int = 15,
         max_chars: int = 50000,
@@ -76,7 +76,7 @@ def main() -> int:
 
     @server.tool(annotations=readonly)
     def wait(
-        tab_id: int | None = None,
+        tab_id: str | None = None,
         url_contains: str | None = None,
         ref: str | None = None,
         timeout_ms: int = 5000,
@@ -97,27 +97,19 @@ def main() -> int:
         )
 
     @server.tool(annotations=readonly)
-    def wait_ref(
-        tab_id: int | None = None,
-        ref: str | None = None,
-        timeout_ms: int = 5000,
-    ) -> dict:
-        """Poll extension for a ref (lightweight, no AX walk). Read-only."""
+    def wait_event(event_name: str, tab_id: str | None = None, timeout_ms: int = 5000) -> dict:
+        """Wait for a WebDriver BiDi event. Read-only."""
         return observe_call(
-            "wait_ref",
+            "wait_event",
             lambda: envelope(
                 ok=True,
-                action="wait_ref",
-                data=wait_ref_for(
-                    tab_id,
-                    ref=ref or "",
-                    timeout_ms=timeout_ms,
-                ),
+                action="wait_event",
+                data=wait_event_for(event_name, tab_id, timeout_ms=timeout_ms),
             ),
         )
 
     @server.tool(annotations=readonly)
-    def shot(tab_id: int | None = None, fit: int = 1568) -> dict:
+    def shot(tab_id: str | None = None, fit: int = 1568) -> dict:
         """Capture the tab viewport. Read-only."""
         return observe_call(
             "shot",

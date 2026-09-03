@@ -3,7 +3,7 @@
 Effective date: 2026-08-22.
 
 pagouse is a local page agent. This policy describes what happens to data
-when you use the pagouse browser extension and CLI.
+when you use the pagouse CLI and managed Chromium session.
 
 ## What pagouse collects
 
@@ -18,8 +18,8 @@ your machine:
 
 - Snapshots, shots, and envelopes are printed to stdout or written under
   your runtime directory (`$XDG_RUNTIME_DIR/pagouse/`).
-- The daemon listens only on a local unix socket with owner-only
-  permissions.
+- WebDriver and CDP endpoints listen only on loopback during the owned
+  Chromium session.
 - Configuration lives in your user config directory.
 
 Whatever leaves your machine leaves because *you* piped it there (for
@@ -28,11 +28,8 @@ untrusted input; see the security model for details.
 
 ## Permissions
 
-The extension requests browser permissions solely to implement the agent
-surface described in the documentation: reading tab state, injecting the
-content script that builds accessibility snapshots, grouping driven tabs,
-and talking to the local daemon over native messaging. Non-http(s) targets
-are always refused.
+The runtime starts Chromium with an isolated temporary profile and refuses
+non-http(s) targets.
 
 ## Changes
 
