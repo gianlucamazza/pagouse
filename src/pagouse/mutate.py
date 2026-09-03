@@ -6,6 +6,8 @@ import time
 from typing import Any
 
 from pagouse.bidi import session
+from pagouse.credentials import origin_for, resolve
+from pagouse.errors import ContextNotFound, CredentialOriginMismatch
 from pagouse.observe import snapshot as take_snapshot
 from pagouse.policy import origin_of, require_origin
 from pagouse.safety import require_input
@@ -58,6 +60,34 @@ def fill(
     session().keys(value, context)
     payload = {"tab_id": context, "ref": ref, "filled": True}
     return _then(payload, then, context, delay_ms)
+
+
+def credential_fill(
+    credential: str,
+    field: str,
+    ref: str,
+    *,
+    tab_id: str | None = None,
+    allow_input: bool = False,
+) -> dict[str, Any]:
+    """Resolve one allowlisted 1Password field and type it into a ref."""
+    _gate(None, allow_input=allow_input)
+    context = str(tab_id) if tab_id is not None else session().current_context()
+    row = next((item for item in session().contexts() if item.get("context") == context), None)
+    if row is None:
+        raise ContextNotFound(context)
+    url = str(row.get("url") or "")
+    _gate(url, allow_input=allow_input)
+    if origin_of(url).lower().rstrip("/") != origin_for(credential):
+        raise CredentialOriginMismatch(origin_of(url))
+    value = resolve(credential, field)
+    try:
+        session().pointer(ref, context)
+        session().key_combo("ctrl+a", context)
+        session().keys(value, context)
+    finally:
+        del value
+    return {"tab_id": context, "credential": credential, "field": field, "ref": ref, "filled": True}
 
 
 def type_text(

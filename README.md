@@ -64,6 +64,10 @@ Drive — add `--allow-input`, click by `ref`, never by coordinates:
 pagouse --json --allow-input click --ref ref_4 --tab ID --then snapshot
 ```
 
+For credentials, configure allowlisted `op://` references in
+`~/.config/pagouse/credentials.toml` and use `credential_fill`. The resolved
+value is never returned in the JSON envelope.
+
 Every command and flag: [docs/cli-reference.md](docs/cli-reference.md). The
 envelope and error codes: [docs/json-contract.md](docs/json-contract.md).
 

@@ -232,6 +232,20 @@ def cmd_fill(args: argparse.Namespace) -> int:
     return _print(payload, as_json=args.json, human=f"filled {args.ref}\n")
 
 
+def cmd_credential_fill(args: argparse.Namespace) -> int:
+    from pagouse.mutate import credential_fill
+
+    data = credential_fill(
+        args.credential,
+        args.field,
+        args.ref,
+        tab_id=args.tab,
+        allow_input=args.allow_input,
+    )
+    payload = _envelope(ok=True, action="credential_fill", data=data)
+    return _print(payload, as_json=args.json, human=f"filled {args.ref}\n")
+
+
 def cmd_type(args: argparse.Namespace) -> int:
     from pagouse.mutate import type_text
 
@@ -423,6 +437,15 @@ def build_parser() -> argparse.ArgumentParser:
         help="ms to wait before --then snapshot (default 450)",
     )
     fill.set_defaults(func=cmd_fill)
+
+    credential = sub.add_parser(
+        "credential_fill", help="fill an allowlisted 1Password credential field"
+    )
+    credential.add_argument("--credential", required=True, metavar="HANDLE")
+    credential.add_argument("--field", required=True, choices=("username", "password"))
+    credential.add_argument("--ref", required=True, help="ref_N from a snapshot")
+    credential.add_argument("--tab", metavar="ID")
+    credential.set_defaults(func=cmd_credential_fill)
 
     typ = sub.add_parser("type", help="type into the focused element of the tab")
     typ.add_argument("text")

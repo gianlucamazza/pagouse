@@ -10,7 +10,7 @@ This page describes what the software enforces. To report a vulnerability, see
 ## The page grant
 
 Observation needs no permission. Mutation — `type`, `key`, `click`, `fill`,
-`navigate`, `tab_open`, `tab_focus` — refuses with `readonly` (exit 2) unless
+`navigate`, `tab_open`, `tab_focus`, `credential_fill` — refuses with `readonly` (exit 2) unless
 one of these is set:
 
 | Where | How | Scope |
@@ -35,6 +35,11 @@ command it ran.
   only to loopback for the lifetime of the owned session.
 - **Secret fields.** Password and typical autocomplete secrets serialize as
   `[redacted]` in a snapshot. Values are never returned.
+
+- **1Password broker.** `credential_fill` accepts only handles from the
+  owner-only credential registry bound to the current page origin. It invokes `op read` for one `op://`
+  reference and never returns the resolved value in JSON, logs, screenshots,
+  or metadata. OTP, passkeys, and MFA approval remain human-in-the-loop.
 
 ## What the core does not enforce
 

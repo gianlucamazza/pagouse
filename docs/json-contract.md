@@ -36,6 +36,7 @@ Failure:
 | `scroll` | `tab_id`, `ref`; optional `snapshot` if `--then snapshot` |
 | `click` | `tab_id`, `ref`; optional `snapshot` if `--then snapshot` |
 | `fill` | `tab_id`, `ref`, `filled`; optional `snapshot` if `--then snapshot` |
+| `credential_fill` | `tab_id`, `credential`, `field`, `ref`, `filled` |
 | `type` | `tab_id`, `typed`; optional `snapshot` if `--then snapshot` |
 | `key` | `tab_id`, `combo`; optional `snapshot` if `--then snapshot` |
 | `navigate` | `tab_id`, `url`; optional `snapshot` if `--then snapshot` |
@@ -82,6 +83,11 @@ could not be read; the rest of the tree is still valid.
 | `session_recovery_failed` | 1 | an existing session could not be reconnected |
 | `stale_metadata` | 1 | persisted browser metadata is invalid or obsolete |
 | `context_not_found` | 1 | the requested browsing context is no longer present |
+| `credential_not_found` | 1 | the credential handle is not configured |
+| `credential_field_invalid` | 1 | the requested credential field is not allowed or configured |
+| `credential_origin_mismatch` | 1 | the credential is not allowlisted for the current page origin |
+| `secret_provider_unavailable` | 1 | 1Password CLI (`op`) is unavailable |
+| `secret_resolution_failed` | 1 | 1Password refused or could not resolve a reference |
 | `usage` | 2 | argparse; JSON envelope when `--json`, otherwise help on stderr |
 
 ## Rules

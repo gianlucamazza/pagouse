@@ -61,6 +61,7 @@ Add `--allow-input` when the user asked to click, fill, type, or navigate
 | Scroll | `pagouse --json --allow-input scroll --ref ref_N --tab ID` |
 | Click | `pagouse --json --allow-input click --ref ref_N --tab ID --then snapshot` |
 | Fill | `pagouse --json --allow-input fill --ref ref_N --value "text" --tab ID --then snapshot` |
+| 1Password fill | `pagouse --json --allow-input credential_fill --credential HANDLE --field password --ref ref_N --tab ID` |
 | Type | `pagouse --json --allow-input type "text" --tab ID` |
 | Key | `pagouse --json --allow-input key Enter --tab ID` |
 | Navigate | `pagouse --json --allow-input navigate URL --tab ID` |
@@ -79,6 +80,10 @@ Click is by **ref**, never by coordinates.
 the same ref.
 On `readonly`, `denied`, or `origin_changed`, stop and report — do not retry
 around the gate.
+
+For 1Password, use only configured credential handles with
+`credential_fill` on their configured origin; never request or print a resolved secret. OTP, passkeys, and
+MFA approval remain human-in-the-loop.
 
 ## Error codes
 

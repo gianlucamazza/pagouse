@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0] — 2026-09-04
+
+- Added allowlisted 1Password CLI credential filling through `op read`.
+- Added owner-only credential registry containing only `op://` references.
+- Added redacted, stable errors for secret-provider and credential failures.
+- Kept OTP, passkeys, and MFA approval human-in-the-loop.
+
 ## [0.5.1] — 2026-09-04
 
 - Added a persistent `systemd --user` browser supervisor and headed variant.

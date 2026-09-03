@@ -6,6 +6,9 @@ __all__ = [
     "BadArg",
     "BadConfig",
     "ContextNotFound",
+    "CredentialFieldInvalid",
+    "CredentialNotFound",
+    "CredentialOriginMismatch",
     "Denied",
     "IpcFailed",
     "NoSession",
@@ -14,6 +17,8 @@ __all__ = [
     "PagouseError",
     "Readonly",
     "RestrictedPage",
+    "SecretProviderUnavailable",
+    "SecretResolutionFailed",
     "SessionRecoveryFailed",
     "SessionStartFailed",
     "StaleMetadata",
@@ -125,3 +130,28 @@ class StaleMetadata(PagouseError):
 class ContextNotFound(PagouseError):
     def __init__(self, context: str) -> None:
         super().__init__("context_not_found", f"context {context} not found")
+
+
+class CredentialNotFound(PagouseError):
+    def __init__(self, handle: str) -> None:
+        super().__init__("credential_not_found", f"credential handle {handle} is not configured")
+
+
+class CredentialFieldInvalid(PagouseError):
+    def __init__(self, field: str) -> None:
+        super().__init__("credential_field_invalid", f"credential field is not allowed: {field}")
+
+
+class CredentialOriginMismatch(PagouseError):
+    def __init__(self, origin: str) -> None:
+        super().__init__("credential_origin_mismatch", f"credential is not allowed on {origin}")
+
+
+class SecretProviderUnavailable(PagouseError):
+    def __init__(self, detail: str) -> None:
+        super().__init__("secret_provider_unavailable", detail)
+
+
+class SecretResolutionFailed(PagouseError):
+    def __init__(self, detail: str) -> None:
+        super().__init__("secret_resolution_failed", detail)

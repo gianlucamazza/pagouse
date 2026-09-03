@@ -22,6 +22,7 @@ Global flags: `--json`, `--verbose`, `--allow-input`, `--version`.
 | `scroll` | `--ref ref_N` into view. Optional `--tab ID`, `--then snapshot`, `--delay MS` (default 450) |
 | `click` | `--ref ref_N`. Optional `--tab ID`, `--then snapshot`, `--delay MS` (default 450) |
 | `fill` | `--ref ref_N --value TEXT`. Optional `--tab ID`, `--then snapshot`, `--delay MS` (default 450) |
+| `credential_fill` | `--credential HANDLE --field username\|password --ref ref_N`. Optional `--tab ID` |
 | `type` | Unicode into the focused control. Optional `--tab ID`, `--then snapshot`, `--delay MS` (default 450) |
 | `key` | Combo such as `Enter` or `ctrl+a`. Optional `--tab ID`, `--then snapshot`, `--delay MS` (default 450) |
 | `navigate` | URL, or `back` / `forward`. Optional `--tab ID`, `--then snapshot`, `--delay MS` (default 450) |

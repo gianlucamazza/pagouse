@@ -12,6 +12,20 @@ allow_origins = []
 deny_origins = []
 ```
 
+Optional credential handles use a separate owner-only file at
+`~/.config/pagouse/credentials.toml`. It contains only 1Password secret
+references, never resolved values:
+
+```toml
+[credentials.example_login]
+origin = "https://example.com"
+username = "op://Pagouse/Example Login/username"
+password = "op://Pagouse/Example Login/password"
+```
+
+`credential_fill` accepts only configured handles and `username`/`password`.
+It resolves values through `op read` only for the duration of the action.
+
 | Key | Default | Meaning |
 |-----|---------|---------|
 | `allow_input` | `false` | Page grant for click/fill/type/key/navigate/tab_* |
@@ -30,7 +44,7 @@ A bare string in a list key is one token, not a sequence of characters.
 | `PAGOUSE_CHROMIUM` | Optional absolute path to the Chromium binary |
 | `PAGOUSE_CHROMEDRIVER` | Optional absolute path to the matching ChromeDriver binary |
 | `XDG_CONFIG_HOME` | Config root; also searched for Chromium NativeMessagingHosts |
-| `XDG_RUNTIME_DIR` | Daemon socket and shot files (`$XDG_RUNTIME_DIR/pagouse/`) |
+| `XDG_RUNTIME_DIR` | Session metadata, lock, and shot files (`$XDG_RUNTIME_DIR/pagouse/`) |
 
 Non-http(s) schemes (`chrome:`, `file:`, …) are always denied by the shipped
 list in [security-model.md](security-model.md). Origin tokens are yours to
