@@ -33,6 +33,7 @@ def main() -> int:
     from pagouse.observe import tabs as list_tabs
     from pagouse.observe import wait as wait_for
     from pagouse.observe import wait_event as wait_event_for
+    from pagouse.passkeys import status as passkey_status_for
 
     server = MCPServer("pagouse")
     readonly = ToolAnnotations(read_only_hint=True)
@@ -71,6 +72,18 @@ def main() -> int:
                         tab_id, filter=filter, depth=depth, max_chars=max_chars
                     )
                 },
+            ),
+        )
+
+    @server.tool(annotations=readonly)
+    def passkey_status(tab_id: str | None = None) -> dict:
+        """Detect a passkey challenge and return a non-sensitive user handoff. Read-only."""
+        return observe_call(
+            "passkey_status",
+            lambda: envelope(
+                ok=True,
+                action="passkey_status",
+                data=passkey_status_for(tab_id),
             ),
         )
 

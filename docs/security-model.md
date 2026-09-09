@@ -30,7 +30,8 @@ command it ran.
 - **User origin policy.** `allow_origins` / `deny_origins` from config.
 - **Origin check mid-action.** If the tab navigated, `origin_changed`.
 - **MCP is observe-only.** The extra exposes `doctor`, `tabs`, `snapshot`,
-  `shot`, `wait`, and `wait_event`. All are annotated read-only; no mutate tool exists there.
+  `passkey_status`, `shot`, `wait`, and `wait_event`. All are annotated
+  read-only; no mutate tool exists there.
 - **No network surface.** The CLI is stdio and WebDriver/CDP endpoints bind
   only to loopback for the lifetime of the owned session.
 - **Secret fields.** Password and typical autocomplete secrets serialize as
@@ -40,6 +41,10 @@ command it ran.
   owner-only credential registry bound to the current page origin. It invokes `op read` for one `op://`
   reference and never returns the resolved value in JSON, logs, screenshots,
   or metadata. OTP, passkeys, and MFA approval remain human-in-the-loop.
+- **Passkey handoff.** `passkey_status` detects a WebAuthn/passkey challenge
+  from the page accessibility tree and reports only a non-sensitive approval
+  state. Passkeys are completed through the trusted local 1Password extension;
+  pagouse never accesses or exports private key material.
 
 ## What the core does not enforce
 
@@ -51,8 +56,9 @@ is. If you want an origin protected, you name it:
 deny_origins = ["https://my.1password.com"]
 ```
 
-**No sandbox.** pagouse runs with your user privileges, while the managed
-browser profile is isolated and temporary.
+**No sandbox.** pagouse runs with your user privileges. The default managed
+profile is isolated and temporary; trusted mode is persistent and isolated
+from the daily browser, but contains user-managed extension state.
 
 ## Untrusted data
 

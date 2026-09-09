@@ -4,6 +4,12 @@
 
 - Hardened credential origin canonicalization and provider-output handling.
 - Added a safe `examples/credentials.toml` registry template.
+- Added read-only passkey challenge detection and a non-sensitive 1Password
+  browser-extension handoff status.
+- Added an explicit trusted local Chromium profile mode for the 1Password
+  browser extension, separate from the isolated default profile.
+- Gave headed managed Chromium windows a dedicated desktop identity so launchers
+  do not confuse them with the daily browser.
 
 ## [0.6.0] — 2026-09-04
 

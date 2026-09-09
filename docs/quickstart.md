@@ -1,7 +1,8 @@
 # Quickstart
 
 Install the package with `./install.sh`. The installer does not touch an
-existing Chromium profile or install an extension.
+existing Chromium profile or install an extension. Use `browser_start --trusted`
+only with the dedicated local 1Password profile configured for passkeys.
 
 Start an isolated browser:
 
@@ -21,4 +22,5 @@ pagouse --json browser_stop
 ```
 
 Set `PAGOUSE_CHROMIUM` or `PAGOUSE_CHROMEDRIVER` when binaries are not found
-on `PATH`. The managed profile is temporary and is removed on stop.
+on `PATH`. The default managed profile is temporary and is removed on stop;
+the trusted profile is persistent and never reuses the daily browser profile.

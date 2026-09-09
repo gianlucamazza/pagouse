@@ -13,6 +13,7 @@ def test_missing_file_is_defaults(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
     cfg = load_config()
     assert cfg.allow_input is False
     assert cfg.allow_origins == ()
+    assert cfg.passkey_provider == "none"
 
 
 def test_bare_string_is_one_token() -> None:
@@ -23,3 +24,10 @@ def test_bare_string_is_one_token() -> None:
 def test_wrong_shape_raises() -> None:
     with pytest.raises(BadConfig):
         parse_config({"policy": {"allow_origins": 1}})
+
+
+def test_passkey_provider_is_explicit() -> None:
+    cfg = parse_config({"passkey": {"provider": "trusted_1password_extension"}})
+    assert cfg.passkey_provider == "trusted_1password_extension"
+    with pytest.raises(BadConfig):
+        parse_config({"passkey": {"provider": "browser_extension"}})

@@ -38,6 +38,7 @@ report `blockers` and stop — do not invent a compositor or pixel fallback.
 |--------|---------|
 | Snapshot of tabs | `pagouse --json tabs` |
 | Accessibility tree | `pagouse --json snapshot --tab ID` |
+| Passkey challenge | `pagouse --json passkey_status --tab ID` |
 | Look at pixels | `pagouse --json shot --tab ID` |
 | Wait for URL or ref | `pagouse --json wait --tab ID --url-contains "/done" --timeout 8000` |
 | Wait for a browser event | `pagouse --json wait_event browsingContext.load --tab ID --timeout 8000` |
@@ -83,7 +84,10 @@ around the gate.
 
 For 1Password, use only configured credential handles with
 `credential_fill` on their configured origin; never request or print a resolved secret. OTP, passkeys, and
-MFA approval remain human-in-the-loop.
+MFA approval remain human-in-the-loop. `passkey_status` is read-only: when it
+detects WebAuthn, complete the sign-in through the trusted local 1Password
+extension. Configure `passkey.provider = "trusted_1password_extension"` only
+after that external pairing. Never export, type, or log passkey material.
 
 ## Error codes
 
@@ -102,7 +106,7 @@ MFA approval remain human-in-the-loop.
 | `bad_config` | 2 | Config file unreadable |
 | `usage` | 2 | CLI argument error |
 
-The MCP extra is observe-only (`doctor`, `tabs`, `snapshot`, `shot`, `wait`, `wait_event`).
+The MCP extra is observe-only (`doctor`, `tabs`, `snapshot`, `passkey_status`, `shot`, `wait`, `wait_event`).
 Mutate only through the CLI. `wait_timeout` means the condition never
 appeared — do not retry the same wait without a new snapshot. Iframe nodes
 use refs like `ref_f123_4`.

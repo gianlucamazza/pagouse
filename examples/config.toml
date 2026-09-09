@@ -2,6 +2,10 @@
 # Page grant: click/fill/type/key/navigate/tab_*. Default false.
 allow_input = false
 
+[passkey]
+# Set to "trusted_1password_extension" after configuring the dedicated profile.
+provider = "none"
+
 [policy]
 # Empty allow_origins = all http(s) once granted. Non-http(s) is always denied.
 allow_origins = []

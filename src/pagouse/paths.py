@@ -26,6 +26,18 @@ def lock_path() -> Path:
     return runtime_dir() / "browser.lock"
 
 
+def trusted_profile_dir() -> Path:
+    """Return the owner-only persistent profile used for trusted browser mode."""
+    base = Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local" / "share"))
+    path = base / "pagouse" / "trusted-chromium"
+    path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    path.mkdir(mode=0o700, exist_ok=True)
+    with contextlib.suppress(OSError):
+        os.chmod(path.parent, 0o700)
+        os.chmod(path, 0o700)
+    return path
+
+
 def cleanup_runtime() -> int:
     """Remove only pagouse-owned legacy runtime artifacts."""
     removed = 0

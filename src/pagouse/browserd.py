@@ -15,6 +15,7 @@ from pagouse.paths import cleanup_runtime, lock_path
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="pagouse-browserd")
     parser.add_argument("--headed", action="store_true")
+    parser.add_argument("--trusted", action="store_true")
     args = parser.parse_args(argv)
     browser = session()
     stopping = False
@@ -33,10 +34,12 @@ def main(argv: list[str] | None = None) -> int:
     signal.signal(signal.SIGTERM, stop)
     signal.signal(signal.SIGINT, stop)
     cleanup_runtime()
-    browser.start(headless=not args.headed)
+    browser.start(headless=not args.headed, mode="trusted" if args.trusted else "isolated")
+    unexpected_exit = False
     try:
         while not stopping:
             if not browser.active:
+                unexpected_exit = True
                 break
             time.sleep(1)
     finally:
@@ -45,4 +48,4 @@ def main(argv: list[str] | None = None) -> int:
         with suppress(OSError):
             fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
         lock.close()
-    return 0
+    return 1 if unexpected_exit else 0

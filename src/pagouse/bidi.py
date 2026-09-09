@@ -34,12 +34,28 @@ from pagouse.errors import (
     WebDriverError,
     WebDriverUnavailable,
 )
-from pagouse.paths import state_path
+from pagouse.paths import state_path, trusted_profile_dir
 
 try:
     import websocket
 except ImportError:  # pragma: no cover - exercised by doctor in a minimal install
     websocket = None  # type: ignore[assignment]
+
+
+_MANAGED_BROWSER_CLASS = "pagouse-browser"
+
+
+def _chromium_options(*, headless: bool, profile_mode: str) -> list[str]:
+    options = [
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--disable-search-engine-choice-screen",
+        "--remote-allow-origins=*",
+        f"--class={_MANAGED_BROWSER_CLASS}",
+    ]
+    if headless and profile_mode != "trusted":
+        options.append("--headless=new")
+    return options
 
 
 def _free_port() -> int:
@@ -122,9 +138,11 @@ class BrowserSession:
         self._websocket_url = ""
         self.session_id = ""
         self.profile: Path | None = None
+        self.profile_mode = "isolated"
         self.debugger_address = ""
         self._contexts: list[str] = []
         self._refs: dict[str, int] = {}
+        self._recovery_error: SessionRecoveryFailed | None = None
         self._restore()
 
     @property
@@ -141,14 +159,21 @@ class BrowserSession:
             return False
         return True
 
-    def start(self, *, headless: bool = True) -> dict[str, Any]:
+    def start(self, *, headless: bool = True, mode: str = "isolated") -> dict[str, Any]:
         if self.active:
             return self.doctor()
+        if mode not in {"isolated", "trusted"}:
+            raise BadConfig("browser mode must be 'isolated' or 'trusted'")
         chromedriver = os.environ.get("PAGOUSE_CHROMEDRIVER") or shutil.which("chromedriver")
         chromium = os.environ.get("PAGOUSE_CHROMIUM") or shutil.which("chromium")
         if not chromedriver or not chromium:
             raise WebDriverUnavailable("chromium and chromedriver are required")
-        self.profile = Path(tempfile.mkdtemp(prefix="pagouse-chromium-"))
+        self.profile_mode = mode
+        self.profile = (
+            Path(tempfile.mkdtemp(prefix="pagouse-chromium-"))
+            if mode == "isolated"
+            else trusted_profile_dir()
+        )
         port = _free_port()
         self.driver = subprocess.Popen(
             [chromedriver, f"--port={port}", "--bind-address=127.0.0.1"],
@@ -159,14 +184,7 @@ class BrowserSession:
         self.driver_pid = self.driver.pid
         self.driver_port = port
         try:
-            options = [
-                "--no-first-run",
-                "--no-default-browser-check",
-                "--disable-search-engine-choice-screen",
-                "--remote-allow-origins=*",
-            ]
-            if headless:
-                options.append("--headless=new")
+            options = _chromium_options(headless=headless, profile_mode=mode)
             response = _json_request(
                 f"http://127.0.0.1:{port}/session",
                 "POST",
@@ -229,11 +247,12 @@ class BrowserSession:
             with suppress(OSError):
                 os.kill(self.driver_pid, signal.SIGTERM)
         self.driver = None
-        if self.profile is not None:
+        if self.profile is not None and self.profile_mode == "isolated":
             shutil.rmtree(self.profile, ignore_errors=True)
         if profile is not None:
             self._kill_profile_processes(profile)
         self.profile = None
+        self.profile_mode = "isolated"
         self.debugger_address = ""
         self.session_id = ""
         self._contexts = []
@@ -283,6 +302,7 @@ class BrowserSession:
             "session_id": self.session_id,
             "websocket_url": self._websocket_url,
             "profile": str(self.profile) if self.profile else "",
+            "profile_mode": self.profile_mode,
             "debugger_address": self.debugger_address,
             "refs": self._refs,
             "updated_at": time.time(),
@@ -294,6 +314,7 @@ class BrowserSession:
 
     def _restore(self) -> None:
         self.client = None
+        self._recovery_error = None
         try:
             state = json.loads(self._state_path.read_text(encoding="utf-8"))
             if state.get("schema") != 1:
@@ -302,6 +323,9 @@ class BrowserSession:
             self.driver_port = int(state["driver_port"])
             self.session_id = str(state["session_id"])
             self.profile = Path(state["profile"]) if state.get("profile") else None
+            self.profile_mode = str(state.get("profile_mode") or "isolated")
+            if self.profile_mode not in {"isolated", "trusted"}:
+                raise StaleMetadata("unsupported browser profile mode")
             self.debugger_address = str(state.get("debugger_address") or "")
             self._refs = {str(key): int(value) for key, value in (state.get("refs") or {}).items()}
             if self.driver_pid and self._pid_alive():
@@ -315,6 +339,17 @@ class BrowserSession:
             self._state_path.unlink(missing_ok=True)
             if isinstance(exc, IpcFailed):
                 self._recovery_error = SessionRecoveryFailed(str(exc))
+        except Exception as exc:
+            # A dead WebDriver endpoint can reject the WebSocket handshake with
+            # a library-specific exception (for example HTTP 400). Treat that
+            # as stale owner metadata so every CLI command remains usable.
+            if websocket is None or not isinstance(exc, websocket.WebSocketException):
+                raise
+            self.client = None
+            self._state_path.unlink(missing_ok=True)
+            self._recovery_error = SessionRecoveryFailed(
+                "managed browser session metadata is no longer valid"
+            )
 
     def reload(self) -> None:
         """Reload owner metadata after another process starts the service."""
@@ -324,6 +359,7 @@ class BrowserSession:
         self.driver_port = 0
         self.session_id = ""
         self.profile = None
+        self.profile_mode = "isolated"
         self.debugger_address = ""
         self._websocket_url = ""
         self._contexts = []
@@ -350,6 +386,9 @@ class BrowserSession:
             "session_id": self.session_id,
             "contexts": len(self._contexts),
             "profile_isolated": self.profile is not None or self.active,
+            "profile_mode": self.profile_mode,
+            "profile_persistent": self.profile_mode == "trusted",
+            "trusted_profile_isolated": self.profile_mode == "trusted",
         }
 
     def contexts(self) -> list[dict[str, Any]]:

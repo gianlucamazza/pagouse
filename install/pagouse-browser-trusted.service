@@ -1,0 +1,14 @@
+[Unit]
+Description=Pagouse trusted Chromium WebDriver BiDi session for local passkeys
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/pagouse-browserd --trusted
+Restart=on-failure
+RestartSec=2
+KillMode=control-group
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=default.target

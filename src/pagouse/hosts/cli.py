@@ -61,7 +61,10 @@ def cmd_browser_start(args: argparse.Namespace) -> int:
         raise PagouseError(
             "webdriver_unavailable", "systemctl is required for the browser supervisor"
         )
-    unit = "pagouse-browser-headed.service" if args.headed else "pagouse-browser.service"
+    if args.trusted:
+        unit = "pagouse-browser-trusted.service"
+    else:
+        unit = "pagouse-browser-headed.service" if args.headed else "pagouse-browser.service"
     try:
         subprocess.run([systemctl, "--user", "start", unit], check=True, timeout=15)
     except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
@@ -75,6 +78,13 @@ def cmd_browser_start(args: argparse.Namespace) -> int:
         time.sleep(0.2)
     else:
         raise PagouseError("session_start_failed", "browser supervisor did not become ready")
+    requested_mode = "trusted" if args.trusted else "isolated"
+    if data.get("profile_mode") != requested_mode:
+        raise PagouseError(
+            "session_start_failed",
+            f"a {data.get('profile_mode', 'unknown')} browser session is already active; "
+            f"stop it before starting {requested_mode}",
+        )
     return _print(
         _envelope(ok=True, action="browser_start", data=data),
         as_json=args.json,
@@ -91,7 +101,11 @@ def cmd_browser_stop(args: argparse.Namespace) -> int:
             "webdriver_unavailable", "systemctl is required for the browser supervisor"
         )
     stopped = session().active
-    for unit in ("pagouse-browser.service", "pagouse-browser-headed.service"):
+    for unit in (
+        "pagouse-browser.service",
+        "pagouse-browser-headed.service",
+        "pagouse-browser-trusted.service",
+    ):
         subprocess.run([systemctl, "--user", "stop", unit], check=False, timeout=15)
     session().reload()
     return _print(
@@ -110,7 +124,7 @@ def cmd_browser_doctor(args: argparse.Namespace) -> int:
         as_json=args.json,
         human=(
             f"active={data['active']} contexts={data['contexts']} "
-            f"isolated={data['profile_isolated']}\n"
+            f"mode={data['profile_mode']} persistent={data['profile_persistent']}\n"
         ),
     )
 
@@ -149,6 +163,19 @@ def cmd_snapshot(args: argparse.Namespace) -> int:
     )
     payload = _envelope(ok=True, action="snapshot", data={"snapshot": data})
     return _print(payload, as_json=args.json, human=str(data.get("tree") or ""))
+
+
+def cmd_passkey_status(args: argparse.Namespace) -> int:
+    from pagouse.passkeys import status
+
+    data = status(args.tab)
+    payload = _envelope(ok=True, action="passkey_status", data=data)
+    human = (
+        "passkey challenge detected; user approval required\n"
+        if data["detected"]
+        else "no passkey challenge detected\n"
+    )
+    return _print(payload, as_json=args.json, human=human)
 
 
 def cmd_wait(args: argparse.Namespace) -> int:
@@ -338,6 +365,11 @@ def build_parser() -> argparse.ArgumentParser:
     browser_start.add_argument(
         "--headed", action="store_true", help="show the managed browser window"
     )
+    browser_start.add_argument(
+        "--trusted",
+        action="store_true",
+        help="use the persistent dedicated profile for local 1Password passkeys",
+    )
     browser_start.set_defaults(func=cmd_browser_start)
     sub.add_parser("browser_stop", help="stop the managed Chromium session").set_defaults(
         func=cmd_browser_stop
@@ -361,6 +393,12 @@ def build_parser() -> argparse.ArgumentParser:
     snap.add_argument("--depth", type=int, default=15)
     snap.add_argument("--max-chars", type=int, default=50000, dest="max_chars")
     snap.set_defaults(func=cmd_snapshot)
+
+    passkey = sub.add_parser(
+        "passkey_status", help="detect a passkey challenge and report the safe handoff"
+    )
+    passkey.add_argument("--tab", metavar="ID", help="context id from tabs")
+    passkey.set_defaults(func=cmd_passkey_status)
 
     shot = sub.add_parser("shot", help="capture the tab viewport")
     shot.add_argument("--tab", metavar="ID", help="context id from tabs")

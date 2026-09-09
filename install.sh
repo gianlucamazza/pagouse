@@ -23,6 +23,7 @@ SYSTEMD_USER_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
 mkdir -p "$SYSTEMD_USER_DIR"
 install -m 0644 "$REPO/install/pagouse-browser.service" "$SYSTEMD_USER_DIR/pagouse-browser.service"
 install -m 0644 "$REPO/install/pagouse-browser-headed.service" "$SYSTEMD_USER_DIR/pagouse-browser-headed.service"
+install -m 0644 "$REPO/install/pagouse-browser-trusted.service" "$SYSTEMD_USER_DIR/pagouse-browser-trusted.service"
 if command -v systemctl >/dev/null 2>&1 && systemctl --user is-system-running >/dev/null 2>&1; then
 	systemctl --user daemon-reload
 fi

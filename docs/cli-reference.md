@@ -9,13 +9,14 @@ Global flags: `--json`, `--verbose`, `--allow-input`, `--version`.
 
 | Command | Purpose |
 |---------|---------|
-| `browser_start` | Start an isolated Chromium session via WebDriver BiDi |
+| `browser_start` | Start Chromium via WebDriver BiDi; `--trusted` starts the persistent dedicated passkey profile |
 | `browser_stop` | Stop the owned Chromium session |
 | `browser_doctor` | Inspect the managed session |
 | `contexts` | List managed browsing contexts |
 | `doctor` | Managed WebDriver BiDi readiness. Branch on `ready`, not envelope `ok`. |
 | `tabs` | Browsing contexts in managed Chromium |
 | `snapshot` | Accessibility tree with `ref_N`. `--tab ID`, `--filter interactive\|all`, `--depth`, `--max-chars` |
+| `passkey_status` | Detect a passkey/WebAuthn challenge and report external handoff availability. Optional `--tab ID` |
 | `shot` | Viewport PNG. `--tab ID`, `--fit PX` (default 1568; `0` disables) |
 | `wait` | Poll until `--url-contains` or `--ref`. `--tab ID`, `--timeout MS` (default 5000) |
 | `wait_event` | Wait for a WebDriver BiDi event. `EVENT`, optional `--tab ID`, `--timeout MS` |
@@ -35,7 +36,7 @@ an environment variable, or a config key. How the grant works:
 
 ## The MCP extra
 
-The MCP extra exposes `doctor`, `tabs`, `snapshot`, `shot`, `wait`, and `wait_event`. All are
+The MCP extra exposes `doctor`, `tabs`, `snapshot`, `passkey_status`, `shot`, `wait`, and `wait_event`. All are
 read-only. There is no mutate tool. Drive the page with the CLI and a grant.
 
 Install: `uv tool install 'pagouse[mcp]'` then register `pagouse-mcp` with the

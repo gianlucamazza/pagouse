@@ -1,7 +1,8 @@
 # Release
 
 Pagouse is released as a Python package. The v2 runtime owns a temporary
-Chromium profile and does not ship an extension or native-messaging host.
+Chromium profile by default and does not ship an extension or native-messaging
+host. Trusted mode uses a separate user-configured profile and extension.
 
 ## Versioning
 

@@ -7,6 +7,10 @@ Missing file = defaults. Override the path with `PAGOUSE_CONFIG`.
 ```toml
 allow_input = false
 
+[passkey]
+# Explicit declaration only; pairing is completed and approved externally.
+provider = "none"
+
 [policy]
 allow_origins = []
 deny_origins = []
@@ -27,12 +31,17 @@ password = "op://Pagouse/Example Login/password"
 
 `credential_fill` accepts only configured handles and `username`/`password`.
 It resolves values through `op read` only for the duration of the action.
+Passkeys are not secret-reference fields. Set `passkey.provider` to
+`"trusted_1password_extension"` only after configuring the dedicated trusted
+profile and pairing the local 1Password extension. pagouse does not verify the
+extension pairing and never handles passkey material.
 
 | Key | Default | Meaning |
 |-----|---------|---------|
 | `allow_input` | `false` | Page grant for click/fill/type/key/navigate/tab_* |
 | `policy.allow_origins` | `[]` | Empty: all http(s) once granted. Non-empty: only these origins |
 | `policy.deny_origins` | `[]` | Origins that always raise `denied` |
+| `passkey.provider` | `"none"` | Local passkey handoff: `none` or `trusted_1password_extension` |
 
 A bare string in a list key is one token, not a sequence of characters.
 

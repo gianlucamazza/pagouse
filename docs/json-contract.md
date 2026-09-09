@@ -23,13 +23,14 @@ Failure:
 
 | action | extra keys on success |
 |--------|------------------------|
-| `browser_start` | `active`, `session_id`, `contexts`, `profile_isolated` |
+| `browser_start` | `active`, `session_id`, `contexts`, `profile_isolated`, `profile_mode`, `profile_persistent`, `trusted_profile_isolated` |
 | `browser_stop` | `stopped` |
-| `browser_doctor` | `active`, `session_id`, `contexts`, `profile_isolated` |
+| `browser_doctor` | `active`, `session_id`, `contexts`, `profile_isolated`, `profile_mode`, `profile_persistent`, `trusted_profile_isolated` |
 | `contexts` | `contexts` |
-| `doctor` | `ready`, `observe_ready`, `shot_ready`, `mutate_ready`, `version`, `session`, `checks`, `blockers` |
+| `doctor` | `ready`, `observe_ready`, `shot_ready`, `mutate_ready`, `version`, `session`, `checks`, `blockers`, `trusted_extension_configured`, `trusted_browser_required` |
 | `tabs` | `tabs` (`id`, `url`, `title`, `active`, `origin`, `scriptable`), `active` |
 | `snapshot` | `snapshot` (`tab_id`, `url`, `title`, `tree`, `refs`, `filter`); optional `frame_errors` |
+| `passkey_status` | `tab_id`, `origin`, `detected`, `handoff_available`, `provider`, `status`; optional `message` |
 | `shot` | `shot` (`tab_id`, `path`, `width`, `height`, `scale`); optional `fit_skipped` when ImageMagick is missing |
 | `wait` | `tab_id`, `url`, `matched` (`url` or `ref`), `timeout_ms` |
 | `wait_event` | `event`, `tab_id`, `payload`, `timeout_ms` |
@@ -60,6 +61,13 @@ snapshot or drive them.
 `[ref_N]` label. Password and secret fields serialize as `[redacted]`.
 Optional `snapshot.frame_errors` lists `{frame, reason}` for sub-frames that
 could not be read; the rest of the tree is still valid.
+`passkey_status` never returns WebAuthn assertions, private keys, secrets, or
+challenge material. When `detected` is true, `status` is
+`requires_user_approval` and the passkey must be approved through the trusted
+local 1Password browser-extension flow.
+When the provider is not configured, `status` is `provider_unavailable` and
+`handoff_available` is false. A configured provider is only a local declaration;
+the external pairing and user approval remain authoritative.
 
 ## Error codes
 

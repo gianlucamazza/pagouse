@@ -15,6 +15,7 @@ class Config:
     allow_input: bool = False
     allow_origins: tuple[str, ...] = ()
     deny_origins: tuple[str, ...] = ()
+    passkey_provider: str = "none"
 
 
 def config_path() -> Path:
@@ -56,8 +57,15 @@ def parse_config(data: dict[str, Any]) -> Config:
     allow = data.get("allow_input", policy.get("allow_input", False))
     allow_origins = policy.get("allow_origins") or data.get("allow_origins") or []
     deny_origins = policy.get("deny_origins") or data.get("deny_origins") or []
+    passkey = data.get("passkey") or {}
+    if not isinstance(passkey, dict):
+        raise BadConfig("passkey must be a table")
+    passkey_provider = passkey.get("provider", "none")
+    if passkey_provider not in {"none", "trusted_1password_extension"}:
+        raise BadConfig("passkey.provider must be 'none' or 'trusted_1password_extension'")
     return Config(
         allow_input=bool(allow),
         allow_origins=_str_tuple(allow_origins, "allow_origins"),
         deny_origins=_str_tuple(deny_origins, "deny_origins"),
+        passkey_provider=passkey_provider,
     )
