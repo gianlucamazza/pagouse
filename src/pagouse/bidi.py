@@ -271,10 +271,10 @@ class BrowserSession:
             with suppress(OSError):
                 os.kill(self.driver_pid, signal.SIGTERM)
         self.driver = None
-        if self.profile is not None and self.profile_mode == "isolated":
-            shutil.rmtree(self.profile, ignore_errors=True)
         if profile is not None:
             self._kill_profile_processes(profile)
+        if self.profile is not None and self.profile_mode == "isolated":
+            shutil.rmtree(self.profile, ignore_errors=True)
         self.profile = None
         self.profile_mode = "isolated"
         self.debugger_address = ""
