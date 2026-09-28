@@ -65,14 +65,14 @@ def _free_port() -> int:
 
 
 def _json_request(
-    url: str, method: str = "GET", body: dict[str, Any] | None = None
+    url: str, method: str = "GET", body: dict[str, Any] | None = None, *, timeout: float = 5
 ) -> dict[str, Any]:
     data = json.dumps(body).encode() if body is not None else None
     request = urllib.request.Request(url, data=data, method=method)
     if data is not None:
         request.add_header("Content-Type", "application/json")
     try:
-        with urllib.request.urlopen(request, timeout=5) as response:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
             return json.loads(response.read())
     except (OSError, urllib.error.URLError, json.JSONDecodeError) as exc:
         raise IpcFailed(f"webdriver endpoint unavailable: {exc}") from exc
@@ -184,6 +184,7 @@ class BrowserSession:
         self.driver_pid = self.driver.pid
         self.driver_port = port
         try:
+            self._wait_for_driver()
             options = _chromium_options(headless=headless, profile_mode=mode)
             response = _json_request(
                 f"http://127.0.0.1:{port}/session",
@@ -223,6 +224,29 @@ class BrowserSession:
             ):
                 raise
             raise SessionStartFailed(str(exc)) from exc
+
+    def _wait_for_driver(self, timeout: float = 5) -> None:
+        """Await the owned driver's endpoint before creating a browser session."""
+        deadline = time.monotonic() + timeout
+        while True:
+            if self.driver is None or self.driver.poll() is not None:
+                raise SessionStartFailed("ChromeDriver exited before its endpoint became ready")
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise SessionStartFailed(
+                    f"ChromeDriver endpoint did not become ready within {timeout:g} seconds"
+                )
+            try:
+                status = _json_request(
+                    f"http://127.0.0.1:{self.driver_port}/status", timeout=min(0.5, remaining)
+                )
+            except IpcFailed:
+                pass
+            else:
+                value = status.get("value")
+                if isinstance(value, dict) and value.get("ready") is True:
+                    return
+            time.sleep(min(0.05, max(0, deadline - time.monotonic())))
 
     def stop(self) -> bool:
         was_active = self.active
