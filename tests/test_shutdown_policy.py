@@ -1,3 +1,4 @@
+import signal
 from pathlib import Path
 from unittest.mock import Mock
 
@@ -41,3 +42,34 @@ def test_all_browser_modes_share_bounded_graceful_shutdown():
         unit = (install / f"{name}.service").read_text()
         assert "KillMode=mixed\n" in unit
         assert "TimeoutStopSec=20s\n" in unit
+
+
+def test_profile_cleanup_matches_whole_argv_not_prefix_or_shell_text(monkeypatch, tmp_path):
+    profile = tmp_path / "owned"
+    marker = f"--user-data-dir={profile}"
+    entries = []
+    for pid, args in (
+        (101, ["chromium", marker]),
+        (102, ["chromium", marker + "-other"]),
+        (103, ["bash", "-c", "echo " + marker]),
+    ):
+        entry = tmp_path / str(pid)
+        entry.mkdir()
+        (entry / "cmdline").write_bytes(b"\0".join(a.encode() for a in args) + b"\0")
+        entries.append(entry)
+    original_glob = Path.glob
+    monkeypatch.setattr(
+        Path,
+        "glob",
+        lambda self, pattern: entries if self == Path("/proc") else original_glob(self, pattern),
+    )
+    signals = []
+
+    def kill(pid, sig):
+        if sig == 0:
+            raise ProcessLookupError
+        signals.append((pid, sig))
+
+    monkeypatch.setattr(bidi.os, "kill", kill)
+    bidi.BrowserSession._kill_profile_processes(profile)
+    assert signals == [(101, signal.SIGTERM)]

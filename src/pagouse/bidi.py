@@ -292,10 +292,10 @@ class BrowserSession:
         pids: list[int] = []
         for entry in Path("/proc").glob("[0-9]*"):
             try:
-                command = b" ".join((entry / "cmdline").read_bytes().split(b"\0"))
+                arguments = (entry / "cmdline").read_bytes().split(b"\0")
             except OSError:
                 continue
-            if marker.encode() in command:
+            if marker.encode() in arguments:
                 with suppress(ValueError):
                     pids.append(int(entry.name))
         for pid in pids:
